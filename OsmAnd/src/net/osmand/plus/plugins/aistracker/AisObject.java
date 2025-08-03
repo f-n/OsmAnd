@@ -98,6 +98,7 @@ public class AisObject {
     private MapMarker restMarker;
     private MapMarker lostMarker;
     private VectorLine directionLine;
+    public static final int START_ZOOM_SHOW_SHAPE = 16;
 
     public AisObject(int mmsi, int msgType, double lat, double lon) {
         initObj(mmsi, msgType);
@@ -500,6 +501,37 @@ public class AisObject {
         canvas.drawCircle(locationX, locationY, 18.0f, localPaint);
     }
 
+    private void drawShape(float locationX, float locationY, @NonNull RotatedTileBox tileBox,
+                            @NonNull Paint paint, @NonNull Canvas canvas) {
+        // draw the shape of the vessel based on the received dimension data
+        if ((tileBox.getZoom() >= START_ZOOM_SHOW_SHAPE) &&
+                (this.ais_dimensionToBow != INVALID_DIMENSION) &&
+                (this.ais_dimensionToStern != INVALID_DIMENSION) &&
+                (this.ais_dimensionToPort != INVALID_DIMENSION) &&
+                (this.ais_dimensionToStarboard != INVALID_DIMENSION) &&
+                (!isLost(vesselLostTimeoutInMinutes))) {
+            double pixDensity = tileBox.getPixDensity();
+            float a = (float)(this.ais_dimensionToBow * pixDensity);
+            float b = (float)(this.ais_dimensionToStern * pixDensity);
+            float c = (float)(this.ais_dimensionToPort * pixDensity);
+            float d = (float)(this.ais_dimensionToStarboard * pixDensity);
+            float e = 0.5f * (c + d);
+            //Log.d("AisObject", "toBow: " + this.ais_dimensionToBow  + ", toStern: " + this.ais_dimensionToStern +
+            //        ", toPort: " + this.ais_dimensionToPort + ", toStarboard: " + this.ais_dimensionToStarboard +
+            //        ", pixDensity: " + pixDensity);
+            canvas.drawLine((float) locationX - c, (float) locationY + b,
+                    (float) locationX - c, (float) locationY - a + e, paint);
+            canvas.drawLine((float) locationX - c, (float) locationY - a + e,
+                    (float) locationX - c + e, (float) locationY - a, paint);
+            canvas.drawLine((float) locationX - c + e, (float) locationY - a,
+                    (float) locationX + d, (float) locationY - a + e, paint);
+            canvas.drawLine((float) locationX + d, (float) locationY - a + e,
+                    (float) locationX + d, (float) locationY + b, paint);
+            canvas.drawLine((float) locationX + d, (float) locationY + b,
+                    (float) locationX - c, (float) locationY + b, paint);
+        }
+    }
+
     public void draw(@NonNull AisTrackerLayer mapLayer, @NonNull Paint paint,
                      @NonNull Canvas canvas, @NonNull RotatedTileBox tileBox) {
         updateBitmap(mapLayer, paint);
@@ -517,8 +549,17 @@ public class AisObject {
             }
             if (vesselAtRest) {
                 drawCircle(locationX, locationY, paint, canvas);
+                //Log.d("AisObject", "heading: " + this.ais_heading);
+                if (this.ais_heading != INVALID_HEADING) {
+                    if (this.ais_heading != 0) {
+                        canvas.rotate(this.ais_heading, locationX, locationY);
+                    }
+                    //Log.d("AisObject", "zoom: " + tileBox.getZoom());
+                    drawShape(locationX, locationY, tileBox, paint, canvas);
+                 }
             } else {
                 canvas.drawBitmap(this.bitmap, Math.round(fx), Math.round(fy), paint);
+                drawShape(locationX, locationY, tileBox, paint, canvas);
             }
             if ((speedFactor > 0) && (!isLost(vesselLostTimeoutInMinutes)) && !vesselAtRest) {
 	            float lineLength = (float)this.bitmap.getHeight() * speedFactor;
@@ -577,6 +618,9 @@ public class AisObject {
             case AIS_VESSEL_SAR:
             case AIS_VESSEL_OTHER:
                 switch (this.ais_navStatus) {
+                    case 1: // at anchor
+                        /* sometimes the ais_navStatus is wrong and contradicts other data... */
+                        return (ais_cog == INVALID_COG) || (ais_sog < 0.2d);
                     case 5: // moored
                         /* sometimes the ais_navStatus is wrong and contradicts other data... */
                         return (ais_cog == INVALID_COG) || (ais_sog < 0.2d);
