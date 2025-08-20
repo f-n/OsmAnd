@@ -6,6 +6,8 @@ import static android.Manifest.permission.BLUETOOTH;
 import static android.Manifest.permission.BLUETOOTH_ADMIN;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_SCAN;
+import static android.content.Context.RECEIVER_EXPORTED;
+import static android.content.Context.RECEIVER_NOT_EXPORTED;
 import static android.graphics.Paint.ANTI_ALIAS_FLAG;
 import static android.graphics.Paint.FILTER_BITMAP_FLAG;
 import static android.util.TypedValue.COMPLEX_UNIT_DIP;
@@ -18,8 +20,10 @@ import android.app.KeyguardManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.ActivityNotFoundException;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
@@ -888,26 +892,34 @@ public class AndroidUtils {
 
 	@NonNull
 	public static Rect getViewBoundOnScreen(@NonNull View view) {
-		int[] pixel = getLocationOnScreen(view);
-		int left = pixel[0];
-		int top = pixel[1];
-		return new Rect(left, top, left + view.getWidth(), top + view.getHeight());
+		if (view.getVisibility() != View.GONE) {
+			int[] pixel = getLocationOnScreen(view);
+			int left = pixel[0];
+			int top = pixel[1];
+			return new Rect(left, top, left + view.getWidth(), top + view.getHeight());
+		}
+		return new Rect();
 	}
 
 	@NonNull
 	public static Rect getViewBoundOnWindow(@NonNull View view) {
-		int[] pixel = new int[2];
-		view.getLocationInWindow(pixel);
-		int left = pixel[0];
-		int top = pixel[1];
-		return new Rect(left, top, left + view.getWidth(), top + view.getHeight());
+		if (view.getVisibility() != View.GONE) {
+			int[] pixel = new int[2];
+			view.getLocationInWindow(pixel);
+			int left = pixel[0];
+			int top = pixel[1];
+			return new Rect(left, top, left + view.getWidth(), top + view.getHeight());
+		}
+		return new Rect();
 	}
 
 	public static int[] getCenterViewCoordinates(@NonNull View view) {
 		int[] coordinates = new int[2];
-		view.getLocationOnScreen(coordinates);
-		coordinates[0] += view.getWidth() / 2;
-		coordinates[1] += view.getHeight() / 2;
+		if (view.getVisibility() != View.GONE) {
+			view.getLocationOnScreen(coordinates);
+			coordinates[0] += view.getWidth() / 2;
+			coordinates[1] += view.getHeight() / 2;
+		}
 		return coordinates;
 	}
 
@@ -1494,5 +1506,16 @@ public class AndroidUtils {
 	@NonNull
 	public static OsmandApplication getApp(@NonNull Context context) {
 		return ((OsmandApplication) context.getApplicationContext());
+	}
+
+	public static Intent registerBroadcastReceiver(@NonNull Context context, @Nullable String action, @Nullable BroadcastReceiver receiver) {
+		return registerBroadcastReceiver(context, action, receiver, false);
+	}
+
+	public static Intent registerBroadcastReceiver(@NonNull Context context, @Nullable String action, @Nullable BroadcastReceiver receiver, boolean export) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+			return context.registerReceiver(receiver, new IntentFilter(action), export ? RECEIVER_EXPORTED : RECEIVER_NOT_EXPORTED);
+		}
+		return context.registerReceiver(receiver, new IntentFilter(action));
 	}
 }

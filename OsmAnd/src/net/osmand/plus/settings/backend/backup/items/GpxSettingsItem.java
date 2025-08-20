@@ -24,6 +24,7 @@ import net.osmand.shared.gpx.GpxDbHelper;
 import net.osmand.shared.gpx.GpxFile;
 import net.osmand.shared.gpx.GpxHelper;
 import net.osmand.shared.io.KFile;
+import net.osmand.util.Algorithms;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -117,6 +118,10 @@ public class GpxSettingsItem extends FileSettingsItem {
 	}
 
 	private void updateGpxParams(@NonNull GpxDataItem dataItem) {
+		int splitType = GpxSplitType.getSplitTypeByTypeId(appearanceInfo.splitType).getType();
+		boolean splitChanged = Algorithms.objectEquals(dataItem.getParameter(SPLIT_TYPE), splitType)
+				|| Algorithms.objectEquals(dataItem.getParameter(SPLIT_INTERVAL), appearanceInfo.splitInterval);
+
 		dataItem.setParameter(COLOR, appearanceInfo.color);
 		dataItem.setParameter(WIDTH, appearanceInfo.width);
 		dataItem.setParameter(SHOW_ARROWS, appearanceInfo.showArrows);
@@ -128,6 +133,14 @@ public class GpxSettingsItem extends FileSettingsItem {
 
 		app.getGpxDbHelper().updateDataItem(dataItem);
 		app.getGpxDbHelper().updateDataItemParameter(dataItem, APPEARANCE_LAST_MODIFIED_TIME, file.lastModified());
+
+		if (splitChanged) {
+			GpxSelectionHelper gpxHelper = app.getSelectedGpxHelper();
+			SelectedGpxFile selectedGpxFile = gpxHelper.getSelectedFileByPath(file.getAbsolutePath());
+			if (selectedGpxFile != null) {
+				selectedGpxFile.resetSplitProcessed();
+			}
+		}
 	}
 
 	private void createGpxAppearanceInfo() {
@@ -156,7 +169,7 @@ public class GpxSettingsItem extends FileSettingsItem {
 	public SettingsItemReader<? extends SettingsItem> getReader() {
 		return new FileSettingsItemReader(this) {
 			@Override
-			public void readFromStream(@NonNull InputStream inputStream, @Nullable File inputFile, @Nullable String entryName) throws IOException, IllegalArgumentException {
+			public File readFromStream(@NonNull InputStream inputStream, @Nullable File inputFile, @Nullable String entryName) throws IOException, IllegalArgumentException {
 				super.readFromStream(inputStream, inputFile, entryName);
 
 				GpxSelectionHelper gpxHelper = app.getSelectedGpxHelper();
@@ -172,6 +185,7 @@ public class GpxSettingsItem extends FileSettingsItem {
 				if (!gpxDbHelper.hasGpxDataItem(kFile)) {
 					gpxDbHelper.add(new GpxDataItem(kFile));
 				}
+				return file;
 			}
 		};
 	}

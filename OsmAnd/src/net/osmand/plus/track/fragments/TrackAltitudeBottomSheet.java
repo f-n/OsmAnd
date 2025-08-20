@@ -2,17 +2,14 @@ package net.osmand.plus.track.fragments;
 
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 
-import net.osmand.plus.OsmandApplication;
 import net.osmand.plus.R;
 import net.osmand.plus.base.MenuBottomSheetDialogFragment;
 import net.osmand.plus.base.bottomsheetmenu.BaseBottomSheetItem;
@@ -25,7 +22,7 @@ import net.osmand.plus.inapp.InAppPurchaseUtils;
 import net.osmand.plus.plugins.PluginsHelper;
 import net.osmand.plus.plugins.srtm.SRTMPlugin;
 import net.osmand.plus.utils.AndroidUtils;
-import net.osmand.plus.utils.UiUtilities;
+import net.osmand.plus.utils.ColorUtilities;
 import net.osmand.plus.widgets.dialogbutton.DialogButton;
 
 public class TrackAltitudeBottomSheet extends MenuBottomSheetDialogFragment implements InAppPurchaseListener {
@@ -34,14 +31,11 @@ public class TrackAltitudeBottomSheet extends MenuBottomSheetDialogFragment impl
 
 	private static final String SEGMENT_INDEX_KEY = "segment_index_key";
 
-	private OsmandApplication app;
 	private int segmentIndex;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		app = requiredMyApplication();
-
 		if (savedInstanceState != null) {
 			segmentIndex = savedInstanceState.getInt(SEGMENT_INDEX_KEY, -1);
 		}
@@ -52,14 +46,16 @@ public class TrackAltitudeBottomSheet extends MenuBottomSheetDialogFragment impl
 		items.add(new TitleItem(getString(R.string.get_altitude_data)));
 		createUseNearbyRoadsItem();
 		if (InAppPurchaseUtils.is3dMapsAvailable(app)) {
-			int margin = getResources().getDimensionPixelSize(R.dimen.divider_color_light_margin_start);
+			int margin = getDimensionPixelSize(R.dimen.divider_color_light_margin_start);
 			DividerItem dividerItem = new DividerItem(app);
 			dividerItem.setMargins(margin, 0, 0, 0);
 			items.add(dividerItem);
 
-			SRTMPlugin plugin = PluginsHelper.getPlugin(SRTMPlugin.class);
+			SRTMPlugin plugin = PluginsHelper.getActivePlugin(SRTMPlugin.class);
 			if (plugin != null && plugin.is3DReliefAllowed()) {
 				createOfflineItem();
+			} else {
+				createOnlineItem();
 			}
 		} else {
 			createOsmAndProItem();
@@ -73,9 +69,27 @@ public class TrackAltitudeBottomSheet extends MenuBottomSheetDialogFragment impl
 				.setIcon(getActiveIcon(R.drawable.ic_action_attach_track))
 				.setLayoutId(R.layout.bottom_sheet_item_with_descr_active)
 				.setOnClickListener(v -> {
+					if (getTargetFragment() instanceof CalculateAltitudeListener listener) {
+						listener.attachToRoadsSelected(segmentIndex);
+					}
+					dismiss();
+				})
+				.create();
+		items.add(attachToRoadsItem);
+	}
+
+	private void createOnlineItem() {
+		BaseBottomSheetItem attachToRoadsItem = new BottomSheetItemWithDescription.Builder()
+				.setDescription(getString(R.string.calculate_online_altitude_descr))
+				.setTitle(getString(R.string.calculate_online))
+				.setTitleColorId(ColorUtilities.getPrimaryTextColorId(nightMode))
+				.setIcon(getContentIcon(R.drawable.ic_action_world_globe))
+				.setLayoutId(R.layout.bottom_sheet_item_with_descr_active)
+				.setDisabled(true)
+				.setOnClickListener(v -> {
 					Fragment fragment = getTargetFragment();
 					if (fragment instanceof CalculateAltitudeListener) {
-						((CalculateAltitudeListener) fragment).attachToRoadsSelected(segmentIndex);
+						((CalculateAltitudeListener) fragment).calculateOnlineSelected(segmentIndex);
 					}
 					dismiss();
 				})
@@ -90,9 +104,8 @@ public class TrackAltitudeBottomSheet extends MenuBottomSheetDialogFragment impl
 				.setIcon(getActiveIcon(R.drawable.ic_action_terrain))
 				.setLayoutId(R.layout.bottom_sheet_item_with_descr_active)
 				.setOnClickListener(v -> {
-					Fragment fragment = getTargetFragment();
-					if (fragment instanceof CalculateAltitudeListener) {
-						((CalculateAltitudeListener) fragment).calculateOfflineSelected(segmentIndex);
+					if (getTargetFragment() instanceof CalculateAltitudeListener listener) {
+						listener.calculateOfflineSelected(segmentIndex);
 					}
 					dismiss();
 				})
@@ -101,29 +114,22 @@ public class TrackAltitudeBottomSheet extends MenuBottomSheetDialogFragment impl
 	}
 
 	private void createOsmAndProItem() {
-		LayoutInflater inflater = UiUtilities.getInflater(requireContext(), nightMode);
-		View view = inflater.inflate(R.layout.online_srtm_promo_item, itemsContainer, false);
+		View view = inflate(R.layout.online_srtm_promo_item, itemsContainer, false);
 
-		UiUtilities utilities = app.getUIUtilities();
 		int color = AndroidUtils.getColorFromAttr(view.getContext(), R.attr.switch_button_active);
-		view.setBackground(utilities.getPaintedIcon(R.drawable.promo_banner_bg, color));
+		view.setBackground(getPaintedIcon(R.drawable.promo_banner_bg, color));
 
 		DialogButton button = view.findViewById(R.id.button_action);
 		button.findViewById(R.id.button_container).setBackground(null);
 
-		Drawable icon = utilities.getIcon(R.drawable.ic_action_osmand_pro_logo_colored);
+		Drawable icon = getIcon(R.drawable.ic_action_osmand_pro_logo_colored);
 		TextView textView = button.findViewById(R.id.button_text);
-		textView.setCompoundDrawablePadding(AndroidUtils.dpToPx(app, 12));
+		textView.setCompoundDrawablePadding(dpToPx(12));
 		textView.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, null, null, null);
 
 		BaseBottomSheetItem item = new BaseBottomSheetItem.Builder()
 				.setCustomView(view)
-				.setOnClickListener(v -> {
-					FragmentActivity activity = getActivity();
-					if (activity != null) {
-						OsmAndProPlanFragment.showInstance(activity);
-					}
-				})
+				.setOnClickListener(v -> callActivity(OsmAndProPlanFragment::showInstance))
 				.create();
 		items.add(item);
 	}
@@ -157,7 +163,6 @@ public class TrackAltitudeBottomSheet extends MenuBottomSheetDialogFragment impl
 
 		void attachToRoadsSelected(int segmentIndex);
 
-		@Deprecated
 		void calculateOnlineSelected(int segmentIndex);
 
 		void calculateOfflineSelected(int segmentIndex);

@@ -16,6 +16,7 @@ import com.android.billingclient.api.BillingResult;
 import com.android.billingclient.api.ProductDetails;
 import com.android.billingclient.api.ProductDetailsResponseListener;
 import com.android.billingclient.api.Purchase;
+import com.android.billingclient.api.QueryProductDetailsResult;
 
 import net.osmand.plus.OsmandApplication;
 import net.osmand.plus.R;
@@ -31,6 +32,7 @@ import net.osmand.plus.plugins.OsmandPlugin;
 import net.osmand.plus.plugins.PluginsHelper;
 import net.osmand.plus.plugins.srtm.SRTMPlugin;
 import net.osmand.plus.settings.backend.OsmandSettings;
+import net.osmand.plus.settings.purchase.data.PurchaseUiData;
 import net.osmand.plus.utils.AndroidUtils;
 import net.osmand.util.Algorithms;
 
@@ -172,7 +174,7 @@ public class InAppPurchaseHelperImpl extends InAppPurchaseHelper {
 							skuInApps.add(sku);
 						}
 					});
-					billingManager.queryProductDetailsAsync(BillingClient.ProductType.INAPP, skuInApps, (billingResult, productDetailsListInApps) -> {
+					billingManager.queryProductDetailsAsync(BillingClient.ProductType.INAPP, skuInApps, (billingResult, queryProductDetailsResultInApps) -> {
 						// Is it a failure?
 						if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
 							logError("Failed to query inapps product details: " + billingResult.getResponseCode());
@@ -201,7 +203,7 @@ public class InAppPurchaseHelperImpl extends InAppPurchaseHelper {
 							return;
 						}
 						manager.queryProductDetailsAsync(BillingClient.ProductType.SUBS, skuSubscriptions,
-								(result, productDetailsListSubs) -> {
+								(result, queryProductDetailsResult) -> {
 									// Is it a failure?
 									if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
 										logError("Failed to query subscriptipons sku details: " + result.getResponseCode());
@@ -210,10 +212,10 @@ public class InAppPurchaseHelperImpl extends InAppPurchaseHelper {
 										return;
 									}
 
-									List<ProductDetails> productDetailsList = new ArrayList<>(productDetailsListInApps);
-									productDetailsList.addAll(productDetailsListSubs);
+									List<ProductDetails> productDetailsList = new ArrayList<>(queryProductDetailsResultInApps.getProductDetailsList());
+									productDetailsList.addAll(queryProductDetailsResult.getProductDetailsList());
 									InAppPurchaseHelperImpl.this.productDetailsList = productDetailsList;
-									getProductDetailsResponseListener(runnable.userRequested()).onProductDetailsResponse(result, productDetailsList);
+									getProductDetailsResponseListener(runnable.userRequested()).onProductDetailsResponse(result, queryProductDetailsResult);
 									processIncompletePurchases(purchases);
 								});
 					});
@@ -308,13 +310,18 @@ public class InAppPurchaseHelperImpl extends InAppPurchaseHelper {
 			AndroidUtils.startActivityIfSafe(activity, intent);
 		}
 	}
-
 	@Override
-	public void manageSubscription(@NonNull Context ctx, @Nullable String sku) {
-		String url = "https://play.google.com/store/account/subscriptions?package=" + ctx.getPackageName();
-		if (!Algorithms.isEmpty(sku)) {
-			url += "&sku=" + sku;
+	public void manageSubscription(@NonNull Context ctx, @Nullable String sku, @Nullable PurchaseOrigin origin) {
+		String url;
+		if (PurchaseOrigin.FASTSPRING == origin) {
+			url = "https://osmand.onfastspring.com/account";
+		} else {
+			url = "https://play.google.com/store/account/subscriptions?package=" + ctx.getPackageName();
+			if (!Algorithms.isEmpty(sku)) {
+				url += "&sku=" + sku;
+			}
 		}
+
 		Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
 		AndroidUtils.startActivityIfSafe(ctx, intent);
 	}
@@ -381,7 +388,7 @@ public class InAppPurchaseHelperImpl extends InAppPurchaseHelper {
 			}
 
 			@Override
-			public void onProductDetailsResponse(@NonNull BillingResult billingResult, @NonNull List<ProductDetails> productDetailsList) {
+			public void onProductDetailsResponse(@NonNull BillingResult billingResult, @NonNull QueryProductDetailsResult queryProductDetailsResult) {
 
 				logDebug("Query product details finished.");
 
