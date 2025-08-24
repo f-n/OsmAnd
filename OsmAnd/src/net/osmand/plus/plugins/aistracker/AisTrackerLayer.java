@@ -80,8 +80,20 @@ public class AisTrackerLayer extends OsmandMapLayer implements IContextMenuProvi
 	@Override
 	public void initLayer(@NonNull OsmandMapTileView view) {
 		super.initLayer(view);
+	}
 
+	@Override
+	public void destroyLayer() {
+		Log.d("AisTrackerLayer", "destroyLayer()");
+		if (this.timer != null) {
+			this.timer.cancel();
+			this.timer.purge();
+			this.timer = null;
+		}
+		this.stopNetworkListener();
+		this.objects.clear();
 
+		super.destroyLayer();
 	}
 
 	@Override
@@ -122,6 +134,7 @@ public class AisTrackerLayer extends OsmandMapLayer implements IContextMenuProvi
 		};
 		this.timer = new Timer();
 		timer.schedule(timerTask, 20000, 30000);
+		Log.d("AisTrackerLayer", "timer initialized");
 	}
 
 	private void startNetworkListener() {
@@ -131,6 +144,7 @@ public class AisTrackerLayer extends OsmandMapLayer implements IContextMenuProvi
 		} else if (proto == AisTrackerPlugin.AIS_NMEA_PROTOCOL_TCP) {
 			this.listener = new AisMessageListener(this, plugin.AIS_NMEA_IP_ADDRESS.get(), plugin.AIS_NMEA_TCP_PORT.get());
 		}
+		AisObject.getAndUpdateLastMessageReceived();
 	}
 
 	private void stopNetworkListener() {
@@ -163,12 +177,7 @@ public class AisTrackerLayer extends OsmandMapLayer implements IContextMenuProvi
 
 	@Override
 	public void cleanupResources() {
-		if (this.timer != null) {
-			this.timer.cancel();
-			this.timer.purge();
-			this.timer = null;
-		}
-		this.objects.clear();
+		Log.d("AisTrackerLayer", "cleanupResources()");
 
 		MapRendererView mapRenderer = view.getMapRenderer();
 		if (mapRenderer != null && markersCollection != null && vectorLinesCollection != null) {
@@ -177,8 +186,6 @@ public class AisTrackerLayer extends OsmandMapLayer implements IContextMenuProvi
 			mapRenderer.removeSymbolsProvider(markersCollection);
 			mapRenderer.removeSymbolsProvider(vectorLinesCollection);
 		}
-
-		stopNetworkListener();
 	}
 
 	private void removeLostAisObjects() {
