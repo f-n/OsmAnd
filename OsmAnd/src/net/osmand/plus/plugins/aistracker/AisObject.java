@@ -99,6 +99,7 @@ public class AisObject {
     private MapMarker lostMarker;
     private VectorLine directionLine;
     public static final int START_ZOOM_SHOW_SHAPE = 16;
+    public static final int START_ZOOM_SHOW_DIRECTION = 10;
 
     public AisObject(int mmsi, int msgType, double lat, double lon) {
         initObj(mmsi, msgType);
@@ -549,19 +550,19 @@ public class AisObject {
             }
             if (vesselAtRest) {
                 drawCircle(locationX, locationY, paint, canvas);
-                //Log.d("AisObject", "heading: " + this.ais_heading);
                 if (this.ais_heading != INVALID_HEADING) {
                     if (this.ais_heading != 0) {
                         canvas.rotate(this.ais_heading, locationX, locationY);
                     }
-                    //Log.d("AisObject", "zoom: " + tileBox.getZoom());
                     drawShape(locationX, locationY, tileBox, paint, canvas);
                  }
             } else {
+                // Log.d("AisObject", "zoom: " + tileBox.getZoom());
                 canvas.drawBitmap(this.bitmap, Math.round(fx), Math.round(fy), paint);
                 drawShape(locationX, locationY, tileBox, paint, canvas);
             }
-            if ((speedFactor > 0) && (!isLost(vesselLostTimeoutInMinutes)) && !vesselAtRest) {
+            if ((tileBox.getZoom() >= START_ZOOM_SHOW_DIRECTION) && (speedFactor > 0) &&
+                    (!isLost(vesselLostTimeoutInMinutes)) && !vesselAtRest) {
 	            float lineLength = (float)this.bitmap.getHeight() * speedFactor;
                 float lineStartY = locationY - this.bitmap.getHeight() / 4.0f;
                 float lineEndY = lineStartY - lineLength;
