@@ -233,11 +233,20 @@ public class AisObject {
             case 22: // WIG, Hazardous category B
             case 23: // WIG, Hazardous category C
             case 24: // WIG, Hazardous category D
+            case 25: // WIG, Reserved for future use
+            case 26: // WIG, Reserved for future use
+            case 27: // WIG, Reserved for future use
+            case 28: // WIG, Reserved for future use
+            case 29: // WIG, Reserved for future use
             case 40: // High Speed Craft (HSC)
             case 41: // HSC, Hazardous category A
             case 42: // HSC, Hazardous category B
             case 43: // HSC, Hazardous category C
             case 44: // HSC, Hazardous category D
+            case 45: // HSC, Reserved for future use
+            case 46: // HSC, Reserved for future use
+            case 47: // HSC, Reserved for future use
+            case 48: // HSC, Reserved for future use
             case 49: // HSC, No additional information
                 this.objectClass = AIS_VESSEL_FAST;
                 break;
@@ -277,6 +286,10 @@ public class AisObject {
             case 62: // Passenger, Hazardous category B
             case 63: // Passenger, Hazardous category C
             case 64: // Passenger, Hazardous category D
+            case 65: // Passenger, Reserved for future use
+            case 66: // Passenger, Reserved for future use
+            case 67: // Passenger, Reserved for future use
+            case 68: // Passenger, Reserved for future use
             case 69: // Passenger, No additional information
                 this.objectClass = AIS_VESSEL_PASSENGER;
                 break;
@@ -286,12 +299,20 @@ public class AisObject {
             case 72: // Cargo, Hazardous category B
             case 73: // Cargo, Hazardous category C
             case 74: // Cargo, Hazardous category D
+            case 75: // Cargo, Reserved for future use
+            case 76: // Cargo, Reserved for future use
+            case 77: // Cargo, Reserved for future use
+            case 78: // Cargo, Reserved for future use
             case 79: // Cargo, No additional information
             case 80: // Tanker, all ships of this type
             case 81: // Tanker, Hazardous category A
             case 82: // Tanker, Hazardous category B
             case 83: // Tanker, Hazardous category C
             case 84: // Tanker, Hazardous category D
+            case 85: // Tanker, Reserved for future use
+            case 86: // Tanker, Reserved for future use
+            case 87: // Tanker, Reserved for future use
+            case 88: // Tanker, Reserved for future use
             case 89: // Tanker, No additional information
                 this.objectClass = AIS_VESSEL_FREIGHT;
                 break;
@@ -301,6 +322,10 @@ public class AisObject {
             case 92: // Other Type, Hazardous category B
             case 93: // Other Type, Hazardous category C
             case 94: // Other Type, Hazardous category D
+            case 95: // Other Type, Reserved for future use
+            case 96: // Other Type, Reserved for future use
+            case 97: // Other Type, Reserved for future use
+            case 98: // Other Type, Reserved for future use
             case 99: // Other Type, no additional information
             default:
                 this.objectClass = AIS_VESSEL_OTHER;
@@ -773,7 +798,12 @@ public class AisObject {
         switch (this.ais_shipType) {
             case INVALID_SHIP_TYPE: // not initialized
                 return("unknown");
-            case 20:
+            case 20: // Wing in ground (WIG), all ships of this type
+            case 25: // Wing in ground (WIG), Reserved for future use
+            case 26: // Wing in ground (WIG), Reserved for future use
+            case 27: // Wing in ground (WIG), Reserved for future use
+            case 28: // Wing in ground (WIG), Reserved for future use
+            case 29: // Wing in ground (WIG), Reserved for future use
                 return("Wing in ground (WIG)");
             case 21:
                 return("WIG, Hazardous category A");
@@ -785,9 +815,9 @@ public class AisObject {
                 return("WIG, Hazardous category D");
             case 30:
                 return("Fishing");
-            case 31:
+            case 31: // Towing
                 return("Towing");
-            case 32:
+            case 32: // Towing: length exceeds 200m or breadth exceeds 25m
                 return("Towing");
             case 33:
                 return("Dredging");
@@ -809,6 +839,10 @@ public class AisObject {
                 return("HSC, Hazardous category C");
             case 44:
                 return("HSC, Hazardous category D");
+            case 45: // HSC, Reserved for future use
+            case 46: // HSC, Reserved for future use
+            case 47: // HSC, Reserved for future use
+            case 48: // HSC, Reserved for future use
             case 49: // HSC, No additional information
                 return("High Speed Craft (HSC)");
             case 50:
@@ -841,6 +875,10 @@ public class AisObject {
                 return("Passenger, Hazardous category C");
             case 64:
                 return("Passenger, Hazardous category D");
+            case 65: // Passenger, Reserved for future use
+            case 66: // Passenger, Reserved for future use
+            case 67: // Passenger, Reserved for future use
+            case 68: // Passenger, Reserved for future use
             case 69: // Passenger, No additional information
                 return("Passenger/Cruise/Ferry");
             case 70: // Cargo, all ships of this type
@@ -853,6 +891,10 @@ public class AisObject {
                 return("Cargo, Hazardous category C");
             case 74:
                 return("Cargo, Hazardous category D");
+            case 75: // Cargo, Reserved for future use
+            case 76: // Cargo, Reserved for future use
+            case 77: // Cargo, Reserved for future use
+            case 78: // Cargo, Reserved for future use
             case 79: // Cargo, No additional information
                 return("Cargo");
             case 80: // Tanker, all ships of this type
@@ -865,6 +907,10 @@ public class AisObject {
                 return("Tanker, Hazardous category C");
             case 84:
                 return("Tanker, Hazardous category D");
+            case 85: // Tanker, Reserved for future use
+            case 86: // Tanker, Reserved for future use
+            case 87: // Tanker, Reserved for future use
+            case 88: // Tanker, Reserved for future use
             case 89: // Tanker, No additional information
                 return("Tanker");
             case 90: // Other Type, all ships of this type
