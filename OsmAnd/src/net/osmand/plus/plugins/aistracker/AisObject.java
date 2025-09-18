@@ -592,9 +592,9 @@ public class AisObject {
             if (isMovable()) {
                 if (this.ais_sog <  2.0d) { return 0.0f; }
                 if (this.ais_sog <  5.0d) { return 1.0f; }
-                if (this.ais_sog < 10.0d) { return 3.0f; }
-                if (this.ais_sog < 25.0d) { return 6.0f; }
-                return 8.0f;
+                if (this.ais_sog < 10.0d) { return 2.0f; }
+                if (this.ais_sog < 25.0d) { return 3.0f; }
+                return 5.0f;
             }
         }
         return 0.0f;
