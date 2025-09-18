@@ -100,11 +100,13 @@ public class AisObject {
     private VectorLine directionLine;
     public static final int START_ZOOM_SHOW_SHAPE = 16;
     public static final int START_ZOOM_SHOW_DIRECTION = 10;
+    public static final float SPEED_CONSIDERED_IN_REST = 0.4f; // in knots: vessels up to this speed are considered as "in rest"
 
     public AisObject(int mmsi, int msgType, double lat, double lon) {
         initObj(mmsi, msgType);
         initLatLon(lat, lon);
         initObjectClass();
+        this.vesselAtRest = isVesselAtRest();
     }
 
     public AisObject(int mmsi, int msgType, int timeStamp, int navStatus, int manInd, int heading,
@@ -119,6 +121,7 @@ public class AisObject {
         this.ais_sog = sog;
         this.ais_rot = rot;
         initObjectClass();
+        this.vesselAtRest = isVesselAtRest();
     }
 
     public AisObject(int mmsi, int msgType, int timeStamp, int altitude,
@@ -130,6 +133,7 @@ public class AisObject {
         this.ais_cog = cog;
         this.ais_sog = sog;
         initObjectClass();
+        this.vesselAtRest = isVesselAtRest();
     }
 
     public AisObject(int mmsi, int msgType, int timeStamp, int heading,
@@ -145,6 +149,7 @@ public class AisObject {
         this.ais_sog = sog;
         this.ais_shipType = shipType;
         initObjectClass();
+        this.vesselAtRest = isVesselAtRest();
     }
 
     public AisObject(int mmsi, int msgType, int imo, @Nullable String callSign, @Nullable String shipName,
@@ -169,6 +174,7 @@ public class AisObject {
         this.ais_etaMin = etaMin;
         this.ais_imo = imo;
         initObjectClass();
+        this.vesselAtRest = isVesselAtRest();
     }
 
     public AisObject(int mmsi, int msgType, double lat, double lon, int aidType,
@@ -179,6 +185,7 @@ public class AisObject {
         initDimensions(dimensionToBow, dimensionToStern, dimensionToPort, dimensionToStarboard);
         this.ais_aidType = aidType;
         initObjectClass();
+        this.vesselAtRest = isVesselAtRest();
     }
 
     public AisObject(@NonNull AisObject ais) {
@@ -413,6 +420,7 @@ public class AisObject {
         this.initObjectClass();
         this.invalidateBitmap();
         this.bitmapColor = 0;
+        this.vesselAtRest = isVesselAtRest();
     }
 
     public static int selectBitmap(@NonNull AisObjType type) {
@@ -446,7 +454,6 @@ public class AisObject {
 
     private void setBitmap(@NonNull AisTrackerLayer mapLayer) {
         invalidateBitmap();
-        vesselAtRest = isVesselAtRest();
         if (isLost(vesselLostTimeoutInMinutes) && !vesselAtRest) {
             if (isMovable()) {
                 this.bitmap = mapLayer.getBitmap(R.drawable.mm_ais_vessel_cross);
@@ -561,7 +568,7 @@ public class AisObject {
                 canvas.drawBitmap(this.bitmap, Math.round(fx), Math.round(fy), paint);
                 drawShape(locationX, locationY, tileBox, paint, canvas);
             }
-            if ((tileBox.getZoom() >= START_ZOOM_SHOW_DIRECTION) && (speedFactor > 0) &&
+            if ((tileBox.getZoom() >= START_ZOOM_SHOW_DIRECTION) && (speedFactor > 0.0f) &&
                     (!isLost(vesselLostTimeoutInMinutes)) && !vesselAtRest) {
 	            float lineLength = (float)this.bitmap.getHeight() * speedFactor;
                 float lineStartY = locationY - this.bitmap.getHeight() / 4.0f;
@@ -620,18 +627,13 @@ public class AisObject {
             case AIS_VESSEL_OTHER:
                 switch (this.ais_navStatus) {
                     case 1: // at anchor
-                        /* sometimes the ais_navStatus is wrong and contradicts other data... */
-                        return (ais_cog == INVALID_COG) || (ais_sog < 0.2d);
                     case 5: // moored
                         /* sometimes the ais_navStatus is wrong and contradicts other data... */
-                        return (ais_cog == INVALID_COG) || (ais_sog < 0.2d);
+                        return (ais_cog == INVALID_COG) || (ais_sog < SPEED_CONSIDERED_IN_REST);
                     default:
                         if (msgTypes.contains(18) || msgTypes.contains(24)
                         ||  msgTypes.contains(1)  || msgTypes.contains(3)) {
-                            if ((ais_cog == INVALID_COG /* maybe remove this condition */)
-                                    && (ais_sog < 0.2d)) {
-                                return true;
-                            }
+                            return (ais_sog < SPEED_CONSIDERED_IN_REST);
                         }
                         return false;
                 }
