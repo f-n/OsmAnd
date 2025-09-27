@@ -7,8 +7,18 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentPagerAdapter;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.snackbar.Snackbar;
@@ -19,27 +29,21 @@ import net.osmand.plus.LockableViewPager;
 import net.osmand.plus.R;
 import net.osmand.plus.activities.MapActivity;
 import net.osmand.plus.base.BaseFullScreenDialogFragment;
+import net.osmand.plus.helpers.AndroidUiHelper;
 import net.osmand.plus.mapmarkers.OrderByBottomSheetDialogFragment.OrderByFragmentListener;
 import net.osmand.plus.mapmarkers.SaveAsTrackBottomSheetDialogFragment.MarkerSaveAsTrackFragmentListener;
 import net.osmand.plus.mapmarkers.SyncGroupTask.OnGroupSyncedListener;
 import net.osmand.plus.track.fragments.TrackMenuFragment;
 import net.osmand.plus.utils.AndroidUtils;
 import net.osmand.plus.utils.ColorUtilities;
+import net.osmand.plus.utils.InsetsUtils.InsetSide;
 import net.osmand.plus.utils.UiUtilities;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.widget.Toolbar;
-import androidx.core.content.ContextCompat;
-import androidx.fragment.app.DialogFragment;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentPagerAdapter;
+import java.util.Set;
 
 public class MapMarkersDialogFragment extends BaseFullScreenDialogFragment implements OnGroupSyncedListener {
 
@@ -67,8 +71,8 @@ public class MapMarkersDialogFragment extends BaseFullScreenDialogFragment imple
 
 	@NonNull
 	@Override
-	public Dialog onCreateDialog(Bundle savedInstanceState) {
-		Dialog dialog = new Dialog(requireActivity(), getTheme()) {
+	public Dialog createDialog(Bundle savedInstanceState) {
+		return new Dialog(requireActivity(), getTheme()) {
 			@Override
 			public void onBackPressed() {
 				if (!dismissOptionsMenuFragment()) {
@@ -76,10 +80,6 @@ public class MapMarkersDialogFragment extends BaseFullScreenDialogFragment imple
 				}
 			}
 		};
-		if (!settings.DO_NOT_USE_ANIMATIONS.get()) {
-			dialog.getWindow().getAttributes().windowAnimations = R.style.Animations_Alpha;
-		}
-		return dialog;
 	}
 
 	@Nullable
@@ -183,6 +183,20 @@ public class MapMarkersDialogFragment extends BaseFullScreenDialogFragment imple
 		return mainView;
 	}
 
+		@Nullable
+	@Override
+	public List<Integer> getScrollableViewIds() {
+		return null;
+	}
+
+	@Nullable
+	@Override
+	public List<Integer> getBottomContainersIds() {
+		List<Integer> ids = new ArrayList<>();
+		ids.add(R.id.map_markers_bottom_navigation);
+		return ids;
+	}
+
 	@Override
 	public void onResume() {
 		super.onResume();
@@ -262,19 +276,18 @@ public class MapMarkersDialogFragment extends BaseFullScreenDialogFragment imple
 
 	public void setupBlurStatusBar() {
 		Dialog dialog = getDialog();
-		if (dialog != null && dialog.getWindow() != null) {
-			statusBarColor = dialog.getWindow().getStatusBarColor();
-			int colorId = !nightMode ? R.color.status_bar_dim_light : R.color.status_bar_dim_dark;
-			dialog.getWindow().setStatusBarColor(getColor(colorId));
+		Window window = dialog != null ? dialog.getWindow() : null;
+		if (window != null) {
+			int colorId = nightMode ? R.color.status_bar_dim_dark : R.color.status_bar_dim_light;
+			statusBarColor = AndroidUiHelper.setStatusBarColor(window, getColor(colorId));
 		}
 	}
 
 	public void restoreStatusBarColor() {
-		if (statusBarColor != -1) {
-			Dialog dialog = getDialog();
-			if (dialog != null && dialog.getWindow() != null) {
-				dialog.getWindow().setStatusBarColor(statusBarColor);
-			}
+		Dialog dialog = getDialog();
+		Window window = dialog != null ? dialog.getWindow() : null;
+		if (statusBarColor != -1 && window != null) {
+			AndroidUiHelper.setStatusBarColor(window, statusBarColor);
 		}
 	}
 

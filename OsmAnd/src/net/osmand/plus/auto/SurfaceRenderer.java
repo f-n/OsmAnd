@@ -51,6 +51,7 @@ public final class SurfaceRenderer implements DefaultLifecycleObserver, MapRende
 
 	private static final double VISIBLE_AREA_Y_MIN_DETECTION_SIZE = 1.025;
 	private static final int MAP_RENDER_MESSAGE = OsmAndConstants.UI_HANDLER_MAP_VIEW + 7;
+	private static final int MAX_FRAME_RATE = 20;
 
 	private final CarContext carContext;
 	private final CarSurfaceView surfaceView;
@@ -410,10 +411,11 @@ public final class SurfaceRenderer implements DefaultLifecycleObserver, MapRende
 							offscreenMapRendererView.setMinZoomLevel(ZoomLevel.swigToEnum(mapView.getMinZoom()));
 							offscreenMapRendererView.setMaxZoomLevel(ZoomLevel.swigToEnum(mapView.getMaxZoom()));
 							offscreenMapRendererView.setAzimuth(0);
+							offscreenMapRendererView.setFlatEarth(!getApp().getSettings().SPHERICAL_MAP.get());
 							offscreenMapRendererView.removeAllSymbolsProviders();
 							offscreenMapRendererView.resumeSymbolsUpdate();
 							offscreenMapRendererView.setSymbolsUpdateInterval(SYMBOLS_UPDATE_INTERVAL);
-							offscreenMapRendererView.enableBatterySavingMode();
+							offscreenMapRendererView.setMaximumFrameRate(MAX_FRAME_RATE);
 							mapRendererContext.setMapRendererView(offscreenMapRendererView);
 							mapView.setMinAllowedElevationAngle(MIN_ALLOWED_ELEVATION_ANGLE_AA);
 							float elevationAngle = mapView.normalizeElevationAngle(getApp().getSettings().getLastKnownMapElevation());

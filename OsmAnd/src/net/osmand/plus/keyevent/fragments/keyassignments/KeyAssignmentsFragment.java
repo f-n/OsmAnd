@@ -148,7 +148,7 @@ public class KeyAssignmentsFragment extends BaseFullScreenFragment
 	}
 
 	private void updateSaveButton(@NonNull View view) {
-		View bottomButtons = view.findViewById(R.id.bottom_buttons);
+		View bottomButtons = view.findViewById(R.id.bottom_buttons_container);
 		bottomButtons.setVisibility(controller.isInEditMode() ? View.VISIBLE : View.GONE);
 		DialogButton applyButton = view.findViewById(R.id.save_button);
 		applyButton.setOnClickListener(v -> controller.askSaveChanges());
@@ -156,7 +156,7 @@ public class KeyAssignmentsFragment extends BaseFullScreenFragment
 	}
 
 	private void updateFabButton(@NonNull View view) {
-		FloatingActionButton addButton = view.findViewById(R.id.fabButton);
+		FloatingActionButton addButton = view.findViewById(R.id.fab);
 		addButton.setVisibility(controller.isDeviceTypeEditable() && !controller.isInEditMode() ? View.VISIBLE : View.GONE);
 		addButton.setOnClickListener(v -> controller.askAddAssignment(addButton));
 	}

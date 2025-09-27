@@ -21,7 +21,6 @@ import androidx.viewpager.widget.ViewPager.SimpleOnPageChangeListener;
 import net.osmand.data.PointDescription;
 import net.osmand.plus.OsmandApplication;
 import net.osmand.plus.R;
-import net.osmand.plus.activities.ActivityResultListener;
 import net.osmand.plus.activities.MapActivity;
 import net.osmand.plus.activities.TabActivity;
 import net.osmand.plus.importfiles.ImportHelper;
@@ -32,6 +31,7 @@ import net.osmand.plus.myplaces.tracks.dialogs.AvailableTracksFragment;
 import net.osmand.plus.plugins.PluginsHelper;
 import net.osmand.plus.settings.backend.OsmandSettings;
 import net.osmand.plus.utils.AndroidUtils;
+import net.osmand.plus.utils.InsetsUtils;
 import net.osmand.plus.views.controls.PagerSlidingTabStrip;
 import net.osmand.util.Algorithms;
 
@@ -51,9 +51,6 @@ public class MyPlacesActivity extends TabActivity {
 	public static final int GPX_TAB = R.string.shared_string_tracks;
 	public static final int FAV_TAB = R.string.shared_string_my_favorites;
 
-	private OsmandApplication app;
-	private OsmandSettings settings;
-
 	private ViewPager viewPager;
 	private final List<WeakReference<FragmentStateHolder>> fragmentsStateList = new ArrayList<>();
 	private int tabSize;
@@ -62,8 +59,6 @@ public class MyPlacesActivity extends TabActivity {
 
 	@Override
 	public void onCreate(@Nullable Bundle savedInstanceState) {
-		app = getMyApplication();
-		settings = app.getSettings();
 		app.applyTheme(this);
 		super.onCreate(savedInstanceState);
 
@@ -101,6 +96,14 @@ public class MyPlacesActivity extends TabActivity {
 				}
 			}
 		}
+	}
+
+	@Nullable
+	@Override
+	public List<Integer> getBottomContainersIds() {
+		List<Integer> ids = new ArrayList<>();
+		ids.add(R.id.bottomControls);
+		return ids;
 	}
 
 	public void updateToolbar() {

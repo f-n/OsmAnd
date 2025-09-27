@@ -4461,7 +4461,7 @@
     <string name="restart_now">Reiniciar ahora</string>
     <string name="map_rendering_engine_v1">Versión 1</string>
     <string name="map_rendering_engine_v2">Versión 2 (OpenGL)</string>
-    <string name="map_rendering_engine_descr">La versión 2 (OpenGL) del motor de renderizado de mapas, es más rápida y también cuenta con vista 2.5D. El renderizado de la versión 1 era el predefinido antes de OsmAnd 4.3 y sigue siendo preferible para dispositivos más antiguos.</string>
+    <string name="map_rendering_engine_descr">El renderizado de la versión 1 era el predefinido antes de OsmAnd 4.3 y sigue siendo preferible para dispositivos más antiguos.\nLa versión 2 (OpenGL) del motor de renderizado de mapas, es más rápida y también cuenta con vista 2.5D.</string>
     <string name="weather_offline_forecast">Pronóstico sin conexión</string>
     <string name="weather_online_cache">Caché en línea</string>
     <string name="map_settings_weather_temp">Temperatura</string>
@@ -5472,12 +5472,10 @@
     <string name="liter">l</string>
     <string name="percent_hour">%/h</string>
     <string name="speedometer_maximum">Máximo</string>
-    <string name="obd_fuel_consumption_rate_l_km_desc">Muestra la tasa de consumo de combustible del vehículo según los cálculos (L/100 km)</string>
     <string name="simulate_obd">Simular datos OBD</string>
     <string name="obd_fuel_pressure">Presión de combustible</string>
     <string name="l_100km">L/100km</string>
     <string name="obd_fuel_consumption_rate_percent_hour_desc">Muestra la tasa de consumo del combustible, según los cálculos (%/h)</string>
-    <string name="obd_fuel_consumption_rate_l_km">Tasa de consumo de combustible (L/100 km)</string>
     <string name="kpa_unit">kPa</string>
     <string name="bt_start_pair_failed">No se puede vincular con el dispositivo</string>
     <string name="dynamic_icon_type_summary">El icono cambia según el estado de la acción.</string>
@@ -5593,7 +5591,6 @@
     <string name="position_animation">Animación de ubicación</string>
     <string name="map_widget_route_information_desc">Muestra la hora de llegada estimada, el tiempo de viaje restante y la distancia de la ruta de navegación activa.</string>
     <string name="wikidata">Wikidata</string>
-    <string name="read_on_wiki">Leer en Wikipedia</string>
     <string name="shared_string_no_animation">Sin animación</string>
     <string name="ais_cpa_settings_description">Estos valores definen la presentación de los objetos AIS que pueden acercarse demasiado respecto a su propia ubicación.</string>
     <string name="customize_grid_color">Personalizar el color de la cuadrícula</string>
@@ -5658,7 +5655,6 @@
     <string name="multipoligon_related">Relacionado</string>
     <string name="route_part_of">Parte de</string>
     <string name="show_debug_tile_description">Muestra información sobre los símbolos de mapa de cada tesela</string>
-    <string name="show_symbols_debug_info">Mostrar información de los símbolos de depuración</string>
     <string name="msg_gpx_waypoints_copied_to_favorites">Puntos GPX (%1$d) copiados a favoritos.</string>
     <string name="msg_favorites_skipped_as_existing">Puntos favoritos (%1$d) omitidos como ya existentes.</string>
     <string name="ais_cpa_warning_distance_description">Los buques se marcan en color rojo si el CPA es inferior a este valor y el CPA se alcanza en un futuro próximo (véase el ajuste «Tiempo de aviso para alcanzar el CPA»).</string>

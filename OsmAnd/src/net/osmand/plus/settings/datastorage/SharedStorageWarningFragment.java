@@ -122,6 +122,14 @@ public class SharedStorageWarningFragment extends BaseFullScreenFragment impleme
 		return mainView;
 	}
 
+	@Nullable
+	@Override
+	public List<Integer> getCollapsingAppBarLayoutId() {
+		List<Integer> ids = new ArrayList<>();
+		ids.add(R.id.appbar);
+		return ids;
+	}
+
 	private void updateContent() {
 		setupButtons();
 		setupProgress();
@@ -245,7 +253,7 @@ public class SharedStorageWarningFragment extends BaseFullScreenFragment impleme
 		DialogButton rightButton = buttonsContainer.findViewById(R.id.right_bottom_button);
 		View buttonsShadow = buttonsContainer.findViewById(R.id.buttons_shadow);
 		View buttonsDivider = buttonsContainer.findViewById(R.id.buttons_divider);
-		View bottomButtons = buttonsContainer.findViewById(R.id.buttons_container);
+		View bottomButtons = buttonsContainer.findViewById(R.id.bottom_buttons_container);
 
 		boolean folderSelected = folderFile != null;
 		if (folderSelected) {

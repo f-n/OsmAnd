@@ -16,6 +16,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.PointF;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Build;
 import android.os.Handler;
@@ -29,6 +30,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import net.osmand.CallbackWithObject;
+import net.osmand.Location;
 import net.osmand.PlatformUtil;
 import net.osmand.StateChangedListener;
 import net.osmand.core.android.MapRendererContext;
@@ -44,6 +46,7 @@ import net.osmand.map.MapTileDownloader.DownloadRequest;
 import net.osmand.map.MapTileDownloader.IMapDownloaderCallback;
 import net.osmand.plus.*;
 import net.osmand.plus.activities.MapActivity;
+import net.osmand.plus.auto.NavigationSession;
 import net.osmand.plus.auto.SurfaceRenderer;
 import net.osmand.plus.auto.views.CarSurfaceView;
 import net.osmand.plus.base.MapViewTrackingUtilities;
@@ -104,6 +107,11 @@ public class OsmandMapTileView implements IMapDownloaderCallback {
 	private static final long ANIMATION_PREVIEW_TIME = 1500;
 	private static final float ZOOM_STEP_TO_FIT = 0.05f;
 	private static final float MARGIN_PERCENT_TO_FIT = 0.8f;
+	private static final int CHANGE_LOCATION_DIFF_METERS = 2;
+
+	private static final int LIMITED_MAX_FRAME_RATE = 20;
+	private static final int USER_INTERACTION_MAX_FRAME_RATE = 120;
+	private static final int ANIMATION_MAX_FRAME_RATE = 60;
 
 	private boolean MEASURE_FPS;
 	private final FPSMeasurement main = new FPSMeasurement();
@@ -123,6 +131,7 @@ public class OsmandMapTileView implements IMapDownloaderCallback {
 
 	private CanvasColors canvasColors;
 	private Boolean nightMode;
+	private QuadPoint cachedAACanvasOffset = new QuadPoint();
 
 	private float minAllowedElevationAngle = MIN_ALLOWED_ELEVATION_ANGLE;
 
@@ -860,6 +869,10 @@ public class OsmandMapTileView implements IMapDownloaderCallback {
 		return touchActive || animatedDraggingThread.isAnimating();
 	}
 
+	public boolean isUserMapInteractionActive() {
+		return touchActive || animatedDraggingThread.isUserAnimationsActive();
+	}
+
 	public float getZoomFloatPart() {
 		return (float) currentViewport.getZoomFloatPart();
 	}
@@ -1252,6 +1265,7 @@ public class OsmandMapTileView implements IMapDownloaderCallback {
 				if (mapRenderer != null) {
 					layer.onPrepareBufferImage(canvas, tileBox, drawSettings);
 				}
+				updateAACanvasOffset();
 				layer.onDraw(canvas, tileBox, drawSettings);
 			} catch (IndexOutOfBoundsException e) {
 				// skip it
@@ -1268,9 +1282,33 @@ public class OsmandMapTileView implements IMapDownloaderCallback {
 		}
 	}
 
+	private void updateAACanvasOffset() {
+		cachedAACanvasOffset = new QuadPoint();
+		QuadPoint center = getRotatedTileBox().getCenterPixelPoint();
+		if (app.getOsmandMap().getMapView().isCarView()) {
+			NavigationSession navigationSession = app.getCarNavigationSession();
+			if (navigationSession != null) {
+				SurfaceRenderer surfaceRenderer = navigationSession.getNavigationCarSurface();
+				if (surfaceRenderer != null) {
+					Rect visibleArea = surfaceRenderer.getVisibleArea();
+					if (visibleArea != null) {
+
+						QuadPoint canvasCenter = new QuadPoint(visibleArea.left + (visibleArea.right - visibleArea.left) / 2f, (visibleArea.top + (visibleArea.bottom - visibleArea.top)) * surfaceRenderer.getCachedRatioY());
+						cachedAACanvasOffset = new QuadPoint(canvasCenter.x - center.x,
+								canvasCenter.y - center.y);
+					}
+				}
+			}
+		}
+	}
+
+	public QuadPoint getAACanvasOffset() {
+		return cachedAACanvasOffset;
+	}
+
 	protected void drawMapPosition(Canvas canvas, float x, float y) {
-		canvas.drawCircle(x, y, 3 * getCurrentDensity(), paintCenter);
-		canvas.drawCircle(x, y, 7 * getCurrentDensity(), paintCenter);
+		canvas.drawCircle(x + cachedAACanvasOffset.x, y + cachedAACanvasOffset.y, 3 * getCurrentDensity(), paintCenter);
+		canvas.drawCircle(x + cachedAACanvasOffset.x, y + cachedAACanvasOffset.y, 7 * getCurrentDensity(), paintCenter);
 	}
 
 	private void refreshBufferImage(@NonNull DrawSettings drawSettings) {
@@ -1602,7 +1640,6 @@ public class OsmandMapTileView implements IMapDownloaderCallback {
 			PointI secondPosition = new PointI((int) secondPoint.x, (int) secondPoint.y);
 			scrollDistanceX = 0.0f;
 			scrollDistanceY = 0.0f;
-			mapRenderer.setMapTarget(firstPosition, new PointI(firstTouchLocationX, firstTouchLocationY));
 			PointD zoomAndRotation = new PointD();
 			boolean canChange = mapRenderer.getZoomAndRotationAfterPinch(
 					new PointI(firstTouchLocationX, firstTouchLocationY), firstTouchLocationHeight, firstPosition,
@@ -1626,7 +1663,7 @@ public class OsmandMapTileView implements IMapDownloaderCallback {
 					float visualZoom = finalZoomFloatPart >= 0
 							? 1 + finalZoomFloatPart
 							: 1 + 0.5f * finalZoomFloatPart;
-					mapRenderer.setFlatZoom(ZoomLevel.swigToEnum(zoomLevel), visualZoom);
+					mapRenderer.setFlatZoom(ZoomLevel.swigToEnum(zoomLevel), visualZoom, false, true);
 					float zoomMagnifier = app.getOsmandMap().getMapDensity();
 					mapRenderer.setVisualZoomShift(zoomMagnifier - 1.0f);
 
@@ -1641,10 +1678,11 @@ public class OsmandMapTileView implements IMapDownloaderCallback {
 				if (startRotating) {
 					float angleShift = (float) zoomAndRotation.getY();
 					this.rotate = MapUtils.unifyRotationTo360(this.rotate - angleShift);
-					mapRenderer.setAzimuth(-this.rotate);
+					mapRenderer.setAzimuth(-this.rotate, false, true);
 					currentViewport.setRotate(this.rotate);
 				}
 			}
+			mapRenderer.setMapTarget(firstPosition, new PointI(firstTouchLocationX, firstTouchLocationY));
 			PointI target31 = mapRenderer.getState().getTarget31();
 			currentViewport.setLatLonCenter(MapUtils.get31LatitudeY(target31.getY()), MapUtils.get31LongitudeX(target31.getX()));
 			refreshMap();
@@ -1872,11 +1910,15 @@ public class OsmandMapTileView implements IMapDownloaderCallback {
 				event.getAction() == MotionEvent.ACTION_SCROLL &&
 				event.getAxisValue(MotionEvent.AXIS_VSCROLL) != 0) {
 			RotatedTileBox tb = getCurrentRotatedTileBox();
-			double lat = tb.getLatFromPixel(event.getX(), event.getY());
-			double lon = tb.getLonFromPixel(event.getX(), event.getY());
+			LatLon latlon = NativeUtilities.getLatLonFromElevatedPixel(mapRenderer, tb, event.getX(), event.getY());
 			int zoomDir = event.getAxisValue(MotionEvent.AXIS_VSCROLL) < 0 ? -1 : 1;
 			int endZoom = normalizeZoomWithLimits(getZoom() + zoomDir);
-			getAnimatedDraggingThread().startMoving(lat, lon, endZoom);
+			float zoomFloatPart = getZoomFloatPart();
+			if (hasMapRenderer()) {
+				getAnimatedDraggingThread().startZooming(endZoom, zoomFloatPart, latlon, true);
+			} else {
+				getAnimatedDraggingThread().startMoving(latlon.getLatitude(), latlon.getLongitude(), endZoom, zoomFloatPart);
+			}
 			return true;
 		}
 		return false;
@@ -1986,7 +2028,6 @@ public class OsmandMapTileView implements IMapDownloaderCallback {
 						targetPixelY = targetPixelPosition.getY();
 						touchPoint = multiTouchSupport.getFirstPoint();
 						findFirstTouchMapLocation(touchPoint.x, touchPoint.y);
-						rotate = MapUtils.unifyRotationTo360(-mapRenderer.getAzimuth());
 					}
 					rotate = MapUtils.unifyRotationTo360(-mapRenderer.getAzimuth());
 				} else if (primaryClear) {
@@ -2092,8 +2133,13 @@ public class OsmandMapTileView implements IMapDownloaderCallback {
 		return animatedMapMarkersThread;
 	}
 
+	public void setPinchZoomMagnificationEnabled(boolean enabled) {
+		MapTileViewMultiTouchZoomListener.isPinchZoomMagnificationEnabled = enabled;
+	}
+
 	private class MapTileViewMultiTouchZoomListener implements MultiTouchZoomListener, DoubleTapZoomListener {
 
+		public static boolean isPinchZoomMagnificationEnabled = false;
 		private static final float ZONE_0_ANGLE_THRESHOLD = 5;
 		private static final float ZONE_1_ANGLE_THRESHOLD = 15;
 		private static final float ZONE_2_ANGLE_THRESHOLD = 20;
@@ -2110,6 +2156,7 @@ public class OsmandMapTileView implements IMapDownloaderCallback {
 		private float x2;
 		private float y2;
 		private LatLon initialCenterLatLon;
+		private PointI initialCenterTile;
 		private boolean startRotating;
 		private boolean startZooming;
 		private float initialElevation;
@@ -2148,6 +2195,12 @@ public class OsmandMapTileView implements IMapDownloaderCallback {
 					app.showToastMessage(OsmAndFormatter.getFormattedDistance((float) MapUtils.getDistance(
 							p1.getLatitude(), p1.getLongitude(), p2.getLatitude(), p2.getLongitude()), app));
 				}
+			}
+
+			if (isPinchZoomMagnificationEnabled && mapRenderer != null) {
+				mapRenderer.setViewportScale(0.0, false);
+				mapRenderer.setViewportShift(0, 0, false);
+				changeZoomPosition((float) 0, 0);
 			}
 		}
 
@@ -2264,11 +2317,28 @@ public class OsmandMapTileView implements IMapDownloaderCallback {
 			initialMultiTouchCenterPoint = centerPoint;
 			initialViewport = getRotatedTileBox();
 			MapRendererView mapRenderer = getMapRenderer();
+			// Remember the tile31 under the pinch center so we can re-center later
+			if (isPinchZoomMagnificationEnabled && mapRenderer != null) {
+				PointI elevatedTile = NativeUtilities.get31FromElevatedPixel(mapRenderer, (int) initialMultiTouchCenterPoint.x,
+						(int) initialMultiTouchCenterPoint.y);
+				if (elevatedTile != null) {
+					initialCenterTile = elevatedTile;
+				} else {
+					// Fallback if elevated lookup fails
+					initialCenterTile = new PointI();
+					mapRenderer.getLocationFromScreenPoint(new PointI((int) initialMultiTouchCenterPoint.x,
+							(int) initialMultiTouchCenterPoint.y), initialCenterTile);
+				}
+			}
 			initialCenterLatLon = NativeUtilities.getLatLonFromElevatedPixel(mapRenderer, initialViewport,
-					initialMultiTouchCenterPoint.x, initialMultiTouchCenterPoint.y);
+					(int) initialMultiTouchCenterPoint.x, (int) initialMultiTouchCenterPoint.y);
 			startRotating = false;
 			startZooming = false;
-			notifyLocationListeners(getLatitude(), getLongitude());
+			Location myLocation = app.getLocationProvider().getLastKnownLocation();
+			if (myLocation == null || MapUtils.getDistance(myLocation.getLatitude(), myLocation.getLongitude(),
+					initialCenterLatLon.getLatitude(), initialCenterLatLon.getLongitude()) > CHANGE_LOCATION_DIFF_METERS) {
+				notifyLocationListeners(getLatitude(), getLongitude());
+			}
 		}
 
 		@Override
@@ -2286,7 +2356,27 @@ public class OsmandMapTileView implements IMapDownloaderCallback {
 			}
 
 			if (deltaZoom != 0 || relAngle != 0) {
-				changeZoomPosition((float) deltaZoom, relAngle);
+				if (isPinchZoomMagnificationEnabled && relativeToStart > 1.0 && mapRenderer != null ) {
+					int multiTouchCenterX;
+					int multiTouchCenterY;
+					if (multiTouchSupport != null && multiTouchSupport.isInZoomAndRotationMode()) {
+						multiTouchCenterX = (int) multiTouchSupport.getCenterPoint().x;
+						multiTouchCenterY = (int) multiTouchSupport.getCenterPoint().y;
+					} else {
+						multiTouchCenterX = (int) initialMultiTouchCenterPoint.x;
+						multiTouchCenterY = (int) initialMultiTouchCenterPoint.y;
+					}
+					// Scale and shift around the pinch center
+					mapRenderer.setViewportScale(relativeToStart, false);
+					mapRenderer.setViewportShift(multiTouchCenterX, view.getHeight() - multiTouchCenterY,  false);
+					// Re-center so the same initial tile stays under the finger
+					mapRenderer.setMapTarget(new PointI(multiTouchCenterX, multiTouchCenterY), initialCenterTile);
+					float calcRotate = initialViewport.getRotate() + relAngle;
+					rotateToAnimate(calcRotate, multiTouchCenterX, multiTouchCenterY);
+					refreshMap();
+				} else {
+					changeZoomPosition((float) deltaZoom, relAngle);
+				}
 			}
 		}
 
@@ -2565,15 +2655,17 @@ public class OsmandMapTileView implements IMapDownloaderCallback {
 		return app.getOsmandMap().getMapLayers().getMeasurementToolLayer();
 	}
 
-	public void applyBatterySavingModeSetting(MapRendererView mapRenderer) {
+	public void applyMaximumFrameRate(@NonNull MapRendererView mapRenderer) {
+		int frameRate;
 		if (settings.BATTERY_SAVING_MODE.get()) {
-			mapRenderer.enableBatterySavingMode();
+			frameRate = LIMITED_MAX_FRAME_RATE;
 		} else {
-			mapRenderer.disableBatterySavingMode();
+			frameRate = isUserMapInteractionActive() ? USER_INTERACTION_MAX_FRAME_RATE : ANIMATION_MAX_FRAME_RATE;
 		}
+		mapRenderer.setMaximumFrameRate(frameRate);
 	}
 
-	public void applyDebugSettings(MapRendererView mapRenderer) {
+	public void applyDebugSettings(@NonNull MapRendererView mapRenderer) {
 		OsmandDevelopmentPlugin plugin = PluginsHelper.getPlugin(OsmandDevelopmentPlugin.class);
 		if (plugin != null) {
 			boolean show = settings.DEBUG_RENDERING_INFO.get();

@@ -94,6 +94,14 @@ public class QuickSearchCustomPoiFragment extends BaseFullScreenDialogFragment i
 	private boolean searchCancelled;
 	private Collator collator;
 
+	@Nullable
+	@Override
+	public List<Integer> getBottomContainersIds() {
+		List<Integer> ids = new ArrayList<>();
+		ids.add(R.id.bottom_buttons_container);
+		return ids;
+	}
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -179,7 +187,7 @@ public class QuickSearchCustomPoiFragment extends BaseFullScreenDialogFragment i
 		});
 
 		bottomBarShadow = view.findViewById(R.id.bottomBarShadow);
-		bottomBar = view.findViewById(R.id.bottomBar);
+		bottomBar = view.findViewById(R.id.bottom_buttons_container);
 		button = view.findViewById(R.id.button);
 		barTitle = view.findViewById(R.id.barTitle);
 		barSubTitle = view.findViewById(R.id.barSubTitle);
@@ -467,14 +475,14 @@ public class QuickSearchCustomPoiFragment extends BaseFullScreenDialogFragment i
 					if (subtypes == null || (poiTypes != null && category.getPoiTypes().size() == poiTypes.size())) {
 						descView.setText(getString(R.string.shared_string_all));
 					} else {
-						StringBuilder sb = new StringBuilder();
-						for (String st : subtypes) {
-							if (!sb.isEmpty()) {
-								sb.append(", ");
+						StringBuilder builder = new StringBuilder();
+						for (String type : subtypes) {
+							if (!Algorithms.isEmpty(builder)) {
+								builder.append(", ");
 							}
-							sb.append(app.getPoiTypes().getPoiTranslation(st));
+							builder.append(app.getPoiTypes().getPoiTranslation(type));
 						}
-						descView.setText(sb.toString());
+						descView.setText(builder.toString());
 					}
 					descView.setVisibility(View.VISIBLE);
 				} else {

@@ -64,7 +64,7 @@ public class AmenityMenuController extends MenuController {
 		acquireTransportStopController(mapActivity, pointDescription);
 
 		String mapNameForMarker = amenity.getName() + "_" + amenity.getType().getKeyName();
-		marker = mapActivity.getMyApplication().getMapMarkersHelper().getMapMarker(mapNameForMarker, amenity.getLocation());
+		marker = mapActivity.getApp().getMapMarkersHelper().getMapMarker(mapNameForMarker, amenity.getLocation());
 		if (marker != null) {
 			MapMarkerMenuController markerMenuController =
 					new MapMarkerMenuController(mapActivity, marker.getPointDescription(mapActivity), marker);
@@ -120,10 +120,14 @@ public class AmenityMenuController extends MenuController {
 	}
 
 	void openTrack(MapActivity mapActivity) {
-		TravelHelper travelHelper = mapActivity.getMyApplication().getTravelHelper();
+		TravelHelper travelHelper = mapActivity.getApp().getTravelHelper();
 		if (ROUTE_ARTICLE_POINT.equals(amenity.getSubType())) {
 			String lang = amenity.getTagSuffix(Amenity.LANG_YES + ":");
 			String name = amenity.getTagContent(Amenity.ROUTE_NAME);
+			if (name == null || lang == null) {
+				LOG.error(amenity.toString() + ": name/lang is null");
+				return;
+			}
 			TravelArticle article = travelHelper.getArticleByTitle(name, lang, true, null);
 			if (article != null) {
 				travelHelper.openTrackMenu(article, mapActivity, name, amenity.getLocation(), false);
@@ -245,13 +249,13 @@ public class AmenityMenuController extends MenuController {
 	@NonNull
 	private String getTypeWithDistanceStr(@NonNull Amenity amenity, @NonNull OsmandApplication app) {
 		String type = getTypeStr(amenity);
-		String distance = AmenityExtensionsHelper.getAmenityDistanceFormatted(amenity, app);
+		String metrics = AmenityExtensionsHelper.getAmenityMetricsFormatted(amenity, app);
 		String activityType = amenity.getRouteActivityType();
 		if (!Algorithms.isEmpty(activityType)) {
 			type = activityType;
 		}
-		if (distance != null) {
-			return app.getString(R.string.ltr_or_rtl_combine_via_comma, type, distance);
+		if (metrics != null) {
+			return app.getString(R.string.ltr_or_rtl_combine_via_comma, type, metrics);
 		} else {
 			return type;
 		}

@@ -17,6 +17,7 @@ import net.osmand.PlatformUtil;
 import net.osmand.plus.R;
 import net.osmand.plus.base.BaseFullScreenFragment;
 import net.osmand.plus.track.fragments.TrackMenuFragment;
+import net.osmand.plus.utils.InsetsUtils.InsetSide;
 import net.osmand.plus.wikivoyage.article.WikivoyageArticleDialogFragment;
 import net.osmand.plus.wikivoyage.data.TravelArticle;
 import net.osmand.plus.wikivoyage.data.TravelGpx;
@@ -28,6 +29,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 public class SavedArticlesTabFragment extends BaseFullScreenFragment implements TravelLocalDataHelper.Listener {
 
@@ -68,9 +70,19 @@ public class SavedArticlesTabFragment extends BaseFullScreenFragment implements 
 		return mainView;
 	}
 
+	@Nullable
+	@Override
+	public Set<InsetSide> getRootInsetSides() {
+		return null;
+	}
+
 	@Override
 	public void onResume() {
 		super.onResume();
+
+		if (adapter != null && adapter.getItemCount() == 0) {
+			savedArticlesUpdated();
+		}
 		if (dataHelper != null) {
 			dataHelper.addListener(this);
 		}

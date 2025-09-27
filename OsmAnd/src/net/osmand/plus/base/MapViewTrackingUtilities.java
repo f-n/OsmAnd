@@ -14,7 +14,6 @@ import androidx.core.util.Pair;
 
 import net.osmand.CallbackWithObject;
 import net.osmand.Location;
-import net.osmand.StateChangedListener;
 import net.osmand.core.android.MapRendererView;
 import net.osmand.data.LatLon;
 import net.osmand.data.RotatedTileBox;
@@ -72,7 +71,6 @@ public class MapViewTrackingUtilities implements OsmAndLocationListener, IMapLoc
 	private OsmandMapTileView mapView;
 	private DashboardOnMap dashboard;
 	private MapContextMenu contextMenu;
-	private StateChangedListener<Boolean> enable3DViewListener;
 
 	private boolean isMapLinkedToLocation = true;
 	private boolean movingToMyLocation;
@@ -190,7 +188,7 @@ public class MapViewTrackingUtilities implements OsmAndLocationListener, IMapLoc
 				if (Math.abs(MapUtils.degreesDiff(mapView.getRotate(), -val)) > 1.0) {
 					mapView.setRotate(-val, false);
 				}
-			} else if (showViewAngle && headingChanged) {
+			} else if (showViewAngle && headingChanged && !mapView.hasMapRenderer()) {
 				mapView.refreshMap();
 			}
 		}
@@ -362,7 +360,7 @@ public class MapViewTrackingUtilities implements OsmAndLocationListener, IMapLoc
 
 		int elevationAngle = 0;
 		if (zoomParams != null && mapView.getElevationAngle() != DEFAULT_ELEVATION_ANGLE) {
-			elevationAngle  = settings.AUTO_ZOOM_3D_ANGLE.get();
+			elevationAngle = settings.AUTO_ZOOM_3D_ANGLE.get();
 		}
 		double latitude = predictedLocation != null ? predictedLocation.getLatitude() : location.getLatitude();
 		double longitude = predictedLocation != null ? predictedLocation.getLongitude() : location.getLongitude();
@@ -570,7 +568,7 @@ public class MapViewTrackingUtilities implements OsmAndLocationListener, IMapLoc
 
 	@Override
 	public void locationChanged(double newLatitude, double newLongitude, Object source) {
-		// when user start dragging 
+		// when user start dragging
 		setMapLinkedToLocation(false);
 	}
 
@@ -581,7 +579,7 @@ public class MapViewTrackingUtilities implements OsmAndLocationListener, IMapLoc
 				switchCompassToNextMode();
 			} else {
 				compassRequest = System.currentTimeMillis();
-				app.showShortToastMessage(app.getString(R.string.press_again_to_change_the_map_orientation));
+				app.showShortToastMessage(R.string.press_again_to_change_the_map_orientation);
 			}
 		} else {
 			compassRequest = 0;

@@ -62,6 +62,7 @@ import net.osmand.plus.feedback.AnalyticsHelper;
 import net.osmand.plus.feedback.FeedbackHelper;
 import net.osmand.plus.feedback.RateUsHelper;
 import net.osmand.plus.feedback.RateUsState;
+import net.osmand.plus.help.HelpArticlesHelper;
 import net.osmand.plus.helpers.*;
 import net.osmand.plus.importfiles.ImportHelper;
 import net.osmand.plus.inapp.InAppPurchaseHelper;
@@ -101,6 +102,7 @@ import net.osmand.plus.settings.enums.DrivingRegion;
 import net.osmand.plus.settings.enums.LocationSource;
 import net.osmand.plus.shared.OsmAndContextImpl;
 import net.osmand.plus.simulation.OsmAndLocationSimulation;
+import net.osmand.plus.track.clickable.ClickableWayHelper;
 import net.osmand.plus.track.helpers.GpsFilterHelper;
 import net.osmand.plus.track.helpers.GpxDisplayHelper;
 import net.osmand.plus.track.helpers.GpxSelectionHelper;
@@ -213,6 +215,8 @@ public class OsmandApplication extends MultiDexApplication {
 	Model3dHelper model3dHelper;
 	TrackSortModesHelper trackSortModesHelper;
 	ExplorePlacesOnlineProvider explorePlacesProvider;
+	HelpArticlesHelper helpArticlesHelper;
+	ClickableWayHelper clickableWayHelper;
 
 	private final Map<String, Builder> customRoutingConfigs = new ConcurrentHashMap<>();
 	private File externalStorageDirectory;
@@ -601,6 +605,10 @@ public class OsmandApplication extends MultiDexApplication {
 		return travelHelper;
 	}
 
+	public ClickableWayHelper getClickableWayHelper() {
+		return clickableWayHelper;
+	}
+
 	public TravelRendererHelper getTravelRendererHelper() {
 		return travelRendererHelper;
 	}
@@ -674,6 +682,11 @@ public class OsmandApplication extends MultiDexApplication {
 	@NonNull
 	public TrackSortModesHelper getTrackSortModesHelper() {
 		return trackSortModesHelper;
+	}
+
+	@NonNull
+	public HelpArticlesHelper getHelpArticlesHelper() {
+		return helpArticlesHelper;
 	}
 
 	public CommandPlayer getPlayer() {

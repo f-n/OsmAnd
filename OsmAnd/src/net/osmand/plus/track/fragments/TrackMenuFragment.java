@@ -33,7 +33,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.Drawable;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.Editable;
 import android.view.Gravity;
@@ -158,6 +157,7 @@ import net.osmand.util.MapUtils;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.List;
 
 public class TrackMenuFragment extends ContextMenuScrollFragment implements CardListener,
@@ -254,6 +254,14 @@ public class TrackMenuFragment extends ContextMenuScrollFragment implements Card
 	@Override
 	public int getMainLayoutId() {
 		return R.layout.track_menu;
+	}
+
+	@Nullable
+	@Override
+	public List<Integer> getBottomContainersIds() {
+		List<Integer> ids = new ArrayList<>();
+		ids.add(R.id.bottom_navigation);
+		return ids;
 	}
 
 	@Override
@@ -1749,7 +1757,7 @@ public class TrackMenuFragment extends ContextMenuScrollFragment implements Card
 	public static void loadSelectedGpxFile(@NonNull MapActivity mapActivity, @Nullable String path,
 	                                       boolean showCurrentTrack,
 	                                       @NonNull CallbackWithObject<SelectedGpxFile> callback) {
-		OsmandApplication app = mapActivity.getMyApplication();
+		OsmandApplication app = mapActivity.getApp();
 		SelectedGpxFile selectedGpxFile;
 		if (showCurrentTrack) {
 			selectedGpxFile = app.getSavingTrackHelper().getCurrentTrack();

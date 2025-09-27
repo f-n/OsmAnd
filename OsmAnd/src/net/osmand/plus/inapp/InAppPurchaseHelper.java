@@ -751,8 +751,7 @@ public abstract class InAppPurchaseHelper {
 
 	protected boolean isSubscribedToExternalOsmAndPro() {
 		for (SubscriptionStateHolder holder : subscriptionStateMap.values()) {
-			if (holder.linkedSubscription != null && holder.linkedSubscription.isOsmAndPro()
-					&& holder.state == SubscriptionState.ACTIVE) {
+			if (holder.linkedSubscription != null && holder.linkedSubscription.isOsmAndPro()) {
 				return true;
 			}
 		}
@@ -761,8 +760,7 @@ public abstract class InAppPurchaseHelper {
 
 	protected boolean isSubscribedToExternalMaps() {
 		for (SubscriptionStateHolder holder : subscriptionStateMap.values()) {
-			if (holder.linkedSubscription != null && holder.linkedSubscription.isMaps()
-					&& holder.state == SubscriptionState.ACTIVE) {
+			if (holder.linkedSubscription != null && holder.linkedSubscription.isMaps()) {
 				return true;
 			}
 		}
@@ -1043,14 +1041,11 @@ public abstract class InAppPurchaseHelper {
 
 	protected abstract boolean isBillingManagerExists();
 
-	protected abstract boolean isBillingUnavailable();
-
 	protected abstract void destroyBillingManager();
 
 	protected void stop(boolean taskDone) {
 		logDebug("Destroying helper.");
 		InAppPurchaseTaskType task = activeTask;
-		boolean billingUnavailable = isBillingUnavailable();
 		if (isBillingManagerExists()) {
 			if (taskDone) {
 				processingTask = false;
@@ -1067,7 +1062,7 @@ public abstract class InAppPurchaseHelper {
 			inventoryRequestPending = false;
 			requestInventory(false);
 		} else {
-			if (task == InAppPurchaseTaskType.REQUEST_INVENTORY && billingUnavailable) {
+			if (task == InAppPurchaseTaskType.REQUEST_INVENTORY) {
 				applyPurchases();
 			}
 		}

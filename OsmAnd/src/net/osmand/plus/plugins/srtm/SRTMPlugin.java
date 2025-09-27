@@ -191,7 +191,7 @@ public class SRTMPlugin extends OsmandPlugin {
 	public CharSequence getDescription(boolean linksEnabled) {
 		String docsUrl = app.getString(R.string.docs_plugin_srtm);
 		String description = app.getString(R.string.srtm_plugin_description, docsUrl);
-		return linksEnabled ? UiUtilities.createUrlSpannable(description, docsUrl) : description;
+		return linksEnabled ? UiUtilities.createUrlSpannable(app, description, docsUrl) : description;
 	}
 
 	@Override
@@ -421,7 +421,7 @@ public class SRTMPlugin extends OsmandPlugin {
 							boolean selected = !settings.getRenderPropertyValue(contourLinesProp).equals(CONTOUR_LINES_DISABLED_VALUE);
 
 							SRTMPlugin plugin = PluginsHelper.getPlugin(SRTMPlugin.class);
-							PluginsHelper.enablePluginIfNeeded(mapActivity, mapActivity.getMyApplication(), plugin, true);
+							PluginsHelper.enablePluginIfNeeded(mapActivity, mapActivity.getApp(), plugin, true);
 
 							item.setDescription(app.getString(R.string.display_zoom_level,
 									AndroidUtils.getRenderingStringPropertyValue(app, contourLinesProp)));
@@ -436,7 +436,7 @@ public class SRTMPlugin extends OsmandPlugin {
 						boolean selected = TERRAIN.get();
 						SRTMPlugin plugin = PluginsHelper.getPlugin(SRTMPlugin.class);
 						if (selected) {
-							PluginsHelper.enablePluginIfNeeded(mapActivity, mapActivity.getMyApplication(), plugin, true);
+							PluginsHelper.enablePluginIfNeeded(mapActivity, mapActivity.getApp(), plugin, true);
 						}
 						item.setColor(app, selected ? R.color.osmand_orange : ContextMenuItem.INVALID_ID);
 						item.setSelected(selected);

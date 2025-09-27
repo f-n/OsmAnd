@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import net.osmand.plus.base.BaseNestedFragment;
+import net.osmand.plus.utils.InsetsUtils.InsetSide;
 import net.osmand.shared.gpx.primitives.WptPt;
 import net.osmand.Location;
 import net.osmand.data.Amenity;
@@ -31,6 +32,9 @@ import androidx.fragment.app.DialogFragment;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.List;
+import java.util.Set;
 
 public class MapMarkersActiveFragment extends BaseNestedFragment implements OsmAndCompassListener, OsmAndLocationListener {
 
@@ -143,6 +147,24 @@ public class MapMarkersActiveFragment extends BaseNestedFragment implements OsmA
 		return mainView;
 	}
 
+	@Nullable
+	@Override
+	public Set<InsetSide> getRootInsetSides() {
+		return null;
+	}
+
+	@Nullable
+	@Override
+	public List<Integer> getScrollableViewIds() {
+		return null;
+	}
+
+	@Nullable
+	@Override
+	public List<Integer> getBottomContainersIds() {
+		return null;
+	}
+
 	@Override
 	public void onResume() {
 		super.onResume();
@@ -201,9 +223,9 @@ public class MapMarkersActiveFragment extends BaseNestedFragment implements OsmA
 		}
 		MapActivity mapActivity = (MapActivity) getActivity();
 		if (mapActivity != null && adapter != null) {
-			mapActivity.getMyApplication().runInUIThread(() -> {
+			mapActivity.getApp().runInUIThread(() -> {
 				if (location == null) {
-					location = mapActivity.getMyApplication().getLocationProvider().getLastKnownLocation();
+					location = mapActivity.getApp().getLocationProvider().getLastKnownLocation();
 				}
 				adapter.notifyDataSetChanged();
 			});

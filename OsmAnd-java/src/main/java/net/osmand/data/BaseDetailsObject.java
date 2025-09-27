@@ -2,7 +2,6 @@ package net.osmand.data;
 
 import static net.osmand.data.Amenity.DEFAULT_ELO;
 import static net.osmand.data.Amenity.WIKIDATA;
-import static net.osmand.data.MapObject.AMENITY_ID_RIGHT_SHIFT;
 
 import net.osmand.NativeLibrary.RenderedObject;
 import net.osmand.binary.BinaryMapIndexReader;
@@ -31,7 +30,7 @@ public class BaseDetailsObject {
 	private String obfResourceName;
 	private SearchResultResource searchResultResource;
 
-	private Amenity syntheticAmenity = new Amenity();
+	protected Amenity syntheticAmenity = new Amenity();
 
 	private ObjectCompleteness objectCompleteness = ObjectCompleteness.EMPTY;
 
@@ -104,7 +103,7 @@ public class BaseDetailsObject {
 		return true;
 	}
 
-	private String getWikidata(Object object) {
+	protected String getWikidata(Object object) {
 		if (object instanceof Amenity amenity) {
 			return amenity.getWikidata();
 		} else if (object instanceof TransportStop transportStop) {
@@ -237,38 +236,7 @@ public class BaseDetailsObject {
 		sortObjects();
 		Set<String> contentLocales = new TreeSet<>();
 		for (Object object : objects) {
-			if (object instanceof Amenity amenity) {
-				processAmenity(amenity, contentLocales);
-			} else if (object instanceof TransportStop transportStop) {
-				Amenity amenity = transportStop.getAmenity();
-				if (amenity != null) {
-					processAmenity(amenity, contentLocales);
-				} else {
-					processId(transportStop);
-					syntheticAmenity.copyNames(transportStop);
-					if (syntheticAmenity.getLocation() == null) {
-						syntheticAmenity.setLocation(transportStop.getLocation());
-					}
-				}
-			} else if (object instanceof RenderedObject renderedObject) {
-				EntityType type = ObfConstants.getOsmEntityType(renderedObject);
-				if (type != null) {
-					long osmId = ObfConstants.getOsmObjectId(renderedObject);
-					long objectId = ObfConstants.createMapObjectIdFromOsmId(osmId, type);
-
-					if (syntheticAmenity.getId() == null && objectId > 0) {
-						syntheticAmenity.setId(objectId);
-					}
-				}
-				if (syntheticAmenity.getType() == null) {
-					syntheticAmenity.copyAdditionalInfo(renderedObject.getTags(), false);
-				}
-				syntheticAmenity.copyNames(renderedObject);
-				if (syntheticAmenity.getLocation() == null) {
-					syntheticAmenity.setLocation(renderedObject.getLocation());
-				}
-				processPolygonCoordinates(renderedObject.getX(), renderedObject.getY());
-			}
+			mergeObject(object, contentLocales, objects.size() == 1);
 		}
 		if (!Algorithms.isEmpty(contentLocales)) {
 			syntheticAmenity.updateContentLocales(contentLocales);
@@ -283,13 +251,48 @@ public class BaseDetailsObject {
 		}
 	}
 
+	protected void mergeObject(Object object, Set<String> contentLocales, boolean isSingleObject) {
+		if (object instanceof Amenity amenity) {
+			processAmenity(amenity, contentLocales, isSingleObject);
+		} else if (object instanceof TransportStop transportStop) {
+			Amenity amenity = transportStop.getAmenity();
+			if (amenity != null) {
+				processAmenity(amenity, contentLocales, isSingleObject);
+			} else {
+				processId(transportStop);
+				syntheticAmenity.copyNames(transportStop);
+				if (syntheticAmenity.getLocation() == null) {
+					syntheticAmenity.setLocation(transportStop.getLocation());
+				}
+			}
+		} else if (object instanceof RenderedObject renderedObject) {
+			EntityType type = ObfConstants.getOsmEntityType(renderedObject);
+			if (type != null) {
+				long osmId = ObfConstants.getOsmObjectId(renderedObject);
+				long objectId = ObfConstants.createMapObjectIdFromOsmId(osmId, type);
+
+				if (syntheticAmenity.getId() == null && objectId > 0) {
+					syntheticAmenity.setId(objectId);
+				}
+			}
+			if (syntheticAmenity.getType() == null) {
+				syntheticAmenity.copyAdditionalInfo(renderedObject.getTags(), false);
+			}
+			syntheticAmenity.copyNames(renderedObject);
+			if (syntheticAmenity.getLocation() == null) {
+				syntheticAmenity.setLocation(renderedObject.getLocation());
+			}
+			processPolygonCoordinates(renderedObject.getX(), renderedObject.getY());
+		}
+	}
+
 	protected void processId(MapObject object) {
 		if (syntheticAmenity.getId() == null && ObfConstants.isOsmUrlAvailable(object)) {
 			syntheticAmenity.setId(object.getId());
 		}
 	}
 
-	protected void processAmenity(Amenity amenity, Set<String> contentLocales) {
+	protected void processAmenity(Amenity amenity, Set<String> contentLocales, boolean isSingleObject) {
 		processId(amenity);
 
 		LatLon location = amenity.getLocation();
@@ -321,8 +324,9 @@ public class BaseDetailsObject {
 			syntheticAmenity.setTravelEloNumber(travelElo);
 		}
 		syntheticAmenity.copyNames(amenity);
-		if (getResourceType(amenity) != SearchResultResource.TRAVEL
-				|| getLangForTravel(amenity).equals(this.lang)) {
+		boolean shouldCopyAdditionalInfo = getResourceType(amenity) != SearchResultResource.TRAVEL
+				|| getLangForTravel(amenity).equals(this.lang); // avoid articles in another language
+		if (isSingleObject || shouldCopyAdditionalInfo) {
 			syntheticAmenity.copyAdditionalInfo(amenity, false);
 		}
 		processPolygonCoordinates(amenity.getX(), amenity.getY());
@@ -438,7 +442,7 @@ public class BaseDetailsObject {
 		this.syntheticAmenity.getX().clear();
 	}
 
-	private boolean isSupportedObjectType(Object object) {
+	protected boolean isSupportedObjectType(Object object) {
 		return object instanceof Amenity || object instanceof TransportStop
 				|| object instanceof RenderedObject || object instanceof BaseDetailsObject;
 	}

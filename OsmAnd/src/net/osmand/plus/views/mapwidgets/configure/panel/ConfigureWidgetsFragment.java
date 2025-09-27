@@ -2,7 +2,6 @@ package net.osmand.plus.views.mapwidgets.configure.panel;
 
 import static net.osmand.plus.helpers.AndroidUiHelper.ANIMATION_DURATION;
 import static net.osmand.plus.settings.bottomsheets.WidgetsResetConfirmationBottomSheet.showResetSettingsDialog;
-import static net.osmand.plus.utils.AndroidUtils.dpToPx;
 import static net.osmand.plus.utils.WidgetUtils.createNewWidget;
 
 import android.graphics.PorterDuff;
@@ -136,6 +135,7 @@ public class ConfigureWidgetsFragment extends BaseFullScreenFragment implements 
 		view = inflate(R.layout.fragment_configure_widgets, container, false);
 		if (Build.VERSION.SDK_INT < 30) {
 			AndroidUtils.addStatusBarPadding21v(requireMyActivity(), view);
+			view.setFitsSystemWindows(true);
 		}
 		appBar = view.findViewById(R.id.appbar);
 
@@ -143,10 +143,10 @@ public class ConfigureWidgetsFragment extends BaseFullScreenFragment implements 
 		tabLayout = view.findViewById(R.id.tab_layout);
 		viewPager = view.findViewById(R.id.view_pager);
 		collapsingToolbarLayout = view.findViewById(R.id.toolbar_layout);
-		fabNewWidget = view.findViewById(R.id.new_entry_fab);
+		fabNewWidget = view.findViewById(R.id.fab);
 		bottomButtonsShadow = view.findViewById(R.id.buttons_shadow);
 		toolbarTitleView = toolbar.findViewById(R.id.toolbar_title);
-		bottomButtons = view.findViewById(R.id.buttons_container);
+		bottomButtons = view.findViewById(R.id.bottom_buttons_container);
 		shadowView = view.findViewById(R.id.shadow_view);
 
 		bottomButtons.setVisibility(View.GONE);
@@ -176,6 +176,14 @@ public class ConfigureWidgetsFragment extends BaseFullScreenFragment implements 
 		updateScreen();
 
 		return view;
+	}
+
+	@Nullable
+	@Override
+	public List<Integer> getCollapsingAppBarLayoutId() {
+		List<Integer> ids = new ArrayList<>();
+		ids.add(R.id.appbar);
+		return ids;
 	}
 
 	@Override

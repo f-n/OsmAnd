@@ -2,6 +2,7 @@ package net.osmand.core.android;
 
 import static net.osmand.IndexConstants.GEOTIFF_DIR;
 import static net.osmand.IndexConstants.GEOTIFF_SQLITE_CACHE_DIR;
+import static net.osmand.IndexConstants.OPENGL_SHADERS_CACHE_DIR;
 import static net.osmand.plus.views.OsmandMapTileView.FOG_DEFAULT_COLOR;
 import static net.osmand.plus.views.OsmandMapTileView.FOG_NIGHTMODE_COLOR;
 import static net.osmand.plus.views.OsmandMapTileView.MAP_DEFAULT_COLOR;
@@ -203,10 +204,7 @@ public class MapRendererContext {
 
 		int zoom = app.getOsmandMap().getMapView().getZoom();
 		String langId = MapRenderRepositories.getMapPreferredLocale(app, zoom);
-		boolean transliterate = MapRenderRepositories.transliterateMapNames(app, zoom);
-		LanguagePreference langPref = transliterate
-				? LanguagePreference.LocalizedOrTransliterated
-				: LanguagePreference.LocalizedOrNative;
+		LanguagePreference langPref = MapRenderRepositories.getMapLanguageSetting(app, zoom);
 
 		loadRendererAddons();
 		String rendName = settings.RENDERER.get();
@@ -487,7 +485,12 @@ public class MapRendererContext {
 		}
 	}
 	public void presetMapRendererOptions(@NonNull MapRendererView mapRendererView, boolean MSAAEnabled) {
-		mapRendererView.setupOptions.setMaxNumberOfRasterMapLayersInBatch(1);
+		File shadersCache = new File(app.getCacheDir(), OPENGL_SHADERS_CACHE_DIR);
+		if (!shadersCache.exists()) {
+			shadersCache.mkdir();
+		}
+		mapRendererView.setupOptions.setPathToOpenGLShadersCache(shadersCache.getAbsolutePath());
+		mapRendererView.setupOptions.setMaxNumberOfRasterMapLayersInBatch(8);
 		mapRendererView.setMSAAEnabled(MSAAEnabled);
 	}
 

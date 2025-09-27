@@ -75,6 +75,7 @@ public class WeatherForecastFragment extends BaseFullScreenFragment implements W
 	private TimeSlider timeSlider;
 	private RulerWidget rulerWidget;
 	private WeatherWidgetsPanel widgetsPanel;
+	private WeatherPlugin.WeatherSourceChangeListener weatherSourceChangeListener;
 	private Handler progressUpdateHandler;
 	private Handler animateForecastHandler;
 
@@ -188,6 +189,14 @@ public class WeatherForecastFragment extends BaseFullScreenFragment implements W
 		buildZoomButtons(view);
 
 		return view;
+	}
+
+	@Nullable
+	@Override
+	public List<Integer> getBottomContainersIds() {
+		List<Integer> ids = new ArrayList<>();
+		ids.add(R.id.main_content);
+		return ids;
 	}
 
 	private void setupPLayForecastButton(View view) {
@@ -419,7 +428,7 @@ public class WeatherForecastFragment extends BaseFullScreenFragment implements W
 		});
 		toolbar.setTitle(R.string.shared_string_weather);
 		toolbar.setBackgroundColor(app.getColor(nightMode ? R.color.activity_background_color_dark : R.color.list_background_color_light));
-		toolbar.getMenu().findItem(R.id.weather_data_source).setVisible(false);
+		toolbar.getMenu().findItem(R.id.weather_data_source).setVisible(true);
 		toolbar.setOnMenuItemClickListener(item -> {
 			if (item.getItemId() == R.id.weather_data_source) {
 				onOptionBtnClicked();
@@ -480,6 +489,14 @@ public class WeatherForecastFragment extends BaseFullScreenFragment implements W
 		mapActivity.getMapLayers().getMapInfoLayer().addAdditionalWidgetsContainer(widgetsPanel);
 		updateWidgetsVisibility(mapActivity, View.GONE);
 		updateSelectedDate(selectedDate.getTime(), false, false);
+		
+		weatherSourceChangeListener = newSource -> {
+			MapActivity activity = requireMapActivity();
+			if (activity != null) {
+				activity.getMapLayers().getMapInfoLayer().updateSideWidgets();
+			}
+		};
+		plugin.addWeatherSourceChangeListener(weatherSourceChangeListener);
 	}
 
 	@Override
@@ -491,6 +508,11 @@ public class WeatherForecastFragment extends BaseFullScreenFragment implements W
 		mapActivity.getMapLayers().getMapInfoLayer().removeAdditionalWidgetsContainer(widgetsPanel);
 		updateWidgetsVisibility(mapActivity, View.VISIBLE);
 		updateSelectedDate(null, false, false);
+		
+		if (weatherSourceChangeListener != null) {
+			plugin.removeWeatherSourceChangeListener(weatherSourceChangeListener);
+			weatherSourceChangeListener = null;
+		}
 	}
 
 	private void updateWidgetsVisibility(@NonNull MapActivity activity, int visibility) {

@@ -1,14 +1,12 @@
 package net.osmand.plus.plugins.odb.dialogs
 
 import android.content.Intent
-import android.net.Uri
 import android.provider.Settings
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.FragmentManager
@@ -16,14 +14,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.AppBarLayout
 import net.osmand.plus.R
 import net.osmand.plus.helpers.AndroidUiHelper
-import net.osmand.plus.plugins.externalsensors.DeviceType
-import net.osmand.plus.plugins.externalsensors.devices.AbstractDevice
-import net.osmand.plus.plugins.externalsensors.devices.ble.BLEOBDDevice
 import net.osmand.plus.plugins.odb.VehicleMetricsPlugin
 import net.osmand.plus.plugins.odb.VehicleMetricsPlugin.OBDConnectionState
 import net.osmand.plus.plugins.odb.adapters.OBDDevicesAdapter
 import net.osmand.plus.plugins.odb.dialogs.RenameOBDDialog.OnDeviceNameChangedCallback
 import net.osmand.plus.utils.AndroidUtils
+import net.osmand.plus.utils.InsetsUtils
 import net.osmand.plus.utils.UiUtilities
 import net.osmand.plus.widgets.dialogbutton.DialogButton
 import net.osmand.plus.widgets.dialogbutton.DialogButtonType
@@ -68,10 +64,7 @@ class OBDDevicesListFragment : OBDDevicesBaseFragment(),
 			UiUtilities.createClickableSpannable(docsLinkText, docsLinkText) { _: Void? ->
 				val activity = activity
 				if (activity != null) {
-					AndroidUtils.openUrl(
-						activity,
-						Uri.parse(getString(R.string.docs_obd_sensors)),
-						nightMode)
+					AndroidUtils.openUrl(activity, R.string.docs_obd_sensors, nightMode)
 				}
 				false
 			}
@@ -92,6 +85,15 @@ class OBDDevicesListFragment : OBDDevicesBaseFragment(),
 		connectInstructions.text = String.format(
 			app.getString(R.string.connect_obd_instructions_step4),
 			app.getString(R.string.external_device_details_connect))
+		if (!InsetsUtils.isEdgeToEdgeSupported()) {
+			view.fitsSystemWindows = false
+		}
+	}
+
+	override fun getCollapsingAppBarLayoutId(): MutableList<Int>? {
+		val ids: MutableList<Int> = java.util.ArrayList()
+		ids.add(R.id.appbar)
+		return ids
 	}
 
 	private fun setupPairSensorButton(view: View, @StringRes titleId: Int) {
@@ -129,6 +131,9 @@ class OBDDevicesListFragment : OBDDevicesBaseFragment(),
 	override fun setupToolbar(view: View) {
 		super.setupToolbar(view)
 		val toolbar = view.findViewById<Toolbar>(R.id.toolbar)
+		if (!InsetsUtils.isEdgeToEdgeSupported()) {
+			toolbar.fitsSystemWindows = true
+		}
 		toolbar.setOnMenuItemClickListener { item: MenuItem ->
 			if (item.itemId == R.id.action_add) {
 				showPairNewSensorBottomSheet()
@@ -262,7 +267,7 @@ class OBDDevicesListFragment : OBDDevicesBaseFragment(),
 				OBDConnectionState.CONNECTING -> R.string.obd_connecting_to_device
 				OBDConnectionState.DISCONNECTED -> R.string.obd_not_connected_to_device
 			}
-			app.showShortToastMessage(app.getString(textId, deviceInfo.name))
+			app.showShortToastMessage(textId, deviceInfo.name)
 		}
 		updatePairedSensorsList()
 	}

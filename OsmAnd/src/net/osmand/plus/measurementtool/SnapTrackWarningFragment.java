@@ -40,6 +40,9 @@ import net.osmand.plus.widgets.dialogbutton.DialogButton;
 
 import org.apache.commons.logging.Log;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class SnapTrackWarningFragment extends BaseFullScreenFragment {
 
 	public static final int REQUEST_CODE = 1000;
@@ -116,6 +119,14 @@ public class SnapTrackWarningFragment extends BaseFullScreenFragment {
 		}
 		refreshControlsButtons();
 		return rootView;
+	}
+
+	@Nullable
+	@Override
+	public List<Integer> getScrollableViewIds() {
+		List<Integer> ids = new ArrayList<>();
+		ids.add(R.id.buttons_container);
+		return ids;
 	}
 
 	private void setupControlButtons(@NonNull View view) {

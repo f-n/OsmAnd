@@ -15,7 +15,6 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -30,6 +29,7 @@ import androidx.fragment.app.FragmentManager;
 import net.osmand.map.OsmandRegions;
 import net.osmand.plus.R;
 import net.osmand.plus.activities.MapActivity;
+import net.osmand.plus.auto.NavigationSession;
 import net.osmand.plus.base.BaseFullScreenDialogFragment;
 import net.osmand.plus.base.dialog.DialogManager;
 import net.osmand.plus.base.dialog.interfaces.dialog.IAskRefreshDialogCompletely;
@@ -50,30 +50,34 @@ import java.util.List;
 public class RequiredMapsFragment extends BaseFullScreenDialogFragment implements IAskRefreshDialogCompletely, DownloadEvents {
 
 	private static final String TAG = RequiredMapsFragment.class.getSimpleName();
+	public static final String OPEN_FRAGMENT_KEY = "REQUIRED_MAPS_FRAGMENT_OPEN_FRAGMENT_KEY";
 
 	private View view;
 
 	private RequiredMapsController controller;
 
+	@Override
+	protected int getStatusBarColorId() {
+		return ColorUtilities.getStatusBarColorId(nightMode);
+	}
+
 	@NonNull
 	@Override
-	public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
-		updateNightMode();
-		Activity activity = requireActivity();
-		Dialog dialog = new Dialog(activity, getThemeId()) {
+	public Dialog createDialog(@Nullable Bundle savedInstanceState) {
+		return new Dialog(requireActivity(), getThemeId()) {
 			@Override
 			public void onBackPressed() {
-				RequiredMapsFragment.this.dismiss();
+				closeDialog();
 			}
 		};
-		Window window = dialog.getWindow();
-		if (window != null) {
-			if (!settings.DO_NOT_USE_ANIMATIONS.get()) {
-				window.getAttributes().windowAnimations = R.style.Animations_Alpha;
-			}
-			window.setStatusBarColor(ColorUtilities.getStatusBarColor(app, nightMode));
+	}
+
+	public void closeDialog() {
+		NavigationSession carNavigationSession = app.getCarNavigationSession();
+		if (carNavigationSession != null) {
+			carNavigationSession.onRequiredMapsDialogClosed();
 		}
-		return dialog;
+		dismiss();
 	}
 
 	@Override
@@ -120,7 +124,7 @@ public class RequiredMapsFragment extends BaseFullScreenDialogFragment implement
 
 		ImageView closeButton = toolbar.findViewById(R.id.close_button);
 		closeButton.setImageDrawable(getIcon(R.drawable.ic_action_close));
-		closeButton.setOnClickListener(v -> dismiss());
+		closeButton.setOnClickListener(v -> closeDialog());
 
 		TextView toolbarTitle = toolbar.findViewById(R.id.toolbar_title);
 		toolbarTitle.setText(R.string.required_maps);

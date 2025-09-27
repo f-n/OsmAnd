@@ -32,6 +32,9 @@ import net.osmand.plus.utils.AndroidUtils;
 import net.osmand.plus.utils.ColorUtilities;
 import net.osmand.plus.widgets.tools.SimpleTextWatcher;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class SelectRouteActivityFragment extends CustomizableSingleSelectionDialogFragment {
 
 	private SelectRouteActivityController controller;
@@ -53,8 +56,8 @@ public class SelectRouteActivityFragment extends CustomizableSingleSelectionDial
 
 	@NonNull
 	@Override
-	public Dialog onCreateDialog(Bundle savedInstanceState) {
-		Dialog dialog = super.onCreateDialog(savedInstanceState);
+	public Dialog createDialog(Bundle savedInstanceState) {
+		Dialog dialog = super.createDialog(savedInstanceState);
 		dialog.setOnKeyListener((d, keyCode, event) -> {
 			if (KeyEvent.KEYCODE_BACK == keyCode && KeyEvent.ACTION_UP == event.getAction()) {
 				onBackPressed();
@@ -72,6 +75,14 @@ public class SelectRouteActivityFragment extends CustomizableSingleSelectionDial
 		setupSearch(view);
 		onScreenModeChanged();
 		return view;
+	}
+
+	@Nullable
+	@Override
+	public List<Integer> getScrollableViewIds() {
+		List<Integer> ids = new ArrayList<>();
+		ids.add(R.id.recycler_view);
+		return ids;
 	}
 
 	@Override
@@ -156,7 +167,7 @@ public class SelectRouteActivityFragment extends CustomizableSingleSelectionDial
 		Window window = requireDialog().getWindow();
 		if (window != null) {
 			AndroidUiHelper.setStatusBarContentColor(window.getDecorView(), true);
-			window.setStatusBarColor(color);
+			AndroidUiHelper.setStatusBarColor(window, color);
 		}
 	}
 

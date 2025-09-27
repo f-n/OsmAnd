@@ -118,10 +118,11 @@ public class NextTurnBaseWidget extends TextInfoWidget implements IComplexWidget
 		UiUtilities.getInflater(mapActivity, nightMode).inflate(layoutId, container);
 		findViews();
 		updateWidgetView();
-		view.setOnLongClickListener(v -> {
+		setOnLongClickListener(v -> {
 			WidgetsContextMenu.showMenu(view, mapActivity, widgetType, customId, null, panel, nightMode, true);
 			return true;
 		});
+		setOnClickListener(getOnClickListener());
 	}
 
 	public void updateWidgetView() {
@@ -549,7 +550,6 @@ public class NextTurnBaseWidget extends TextInfoWidget implements IComplexWidget
 			copyTextView(smallTextViewShadow, oldSmallTextViewShadow);
 			copyView(emptyBanner, oldEmptyBanner);
 		}
-		view.setOnClickListener(getOnClickListener());
 		view.setVisibility(oldContainer.getVisibility());
 	}
 
@@ -580,6 +580,7 @@ public class NextTurnBaseWidget extends TextInfoWidget implements IComplexWidget
 		}
 	}
 
+	@Nullable
 	protected View.OnClickListener getOnClickListener() {
 		return null;
 	}

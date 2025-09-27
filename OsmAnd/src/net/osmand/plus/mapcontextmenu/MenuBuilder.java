@@ -90,6 +90,7 @@ import net.osmand.plus.poi.PoiUIFilter;
 import net.osmand.plus.search.dialogs.QuickSearchToolbarController;
 import net.osmand.plus.settings.backend.OsmAndAppCustomization;
 import net.osmand.plus.settings.enums.ThemeUsageContext;
+import net.osmand.plus.track.clickable.ClickableWayHelper;
 import net.osmand.plus.transport.TransportStopRoute;
 import net.osmand.plus.utils.AndroidUtils;
 import net.osmand.plus.utils.ColorUtilities;
@@ -131,7 +132,7 @@ public class MenuBuilder {
 
 	protected static final String[] arrowChars = {"=>", " - "};
 
-	protected OsmandApplication app;
+	public OsmandApplication app;
 	protected MapActivity mapActivity;
 	protected MapContextMenu mapContextMenu;
 	protected OsmAndAppCustomization customization;
@@ -141,7 +142,7 @@ public class MenuBuilder {
 	protected LinkedList<PlainMenuItem> plainMenuItems;
 	protected boolean firstRow;
 	protected boolean matchWidthDivider;
-	private Amenity amenity;
+	protected Amenity amenity;
 	private LatLon latLon;
 	private boolean hidden;
 	private boolean showTitleIfTruncated = true;
@@ -208,7 +209,7 @@ public class MenuBuilder {
 
 	public MenuBuilder(@NonNull MapActivity mapActivity) {
 		this.mapActivity = mapActivity;
-		this.app = mapActivity.getMyApplication();
+		this.app = mapActivity.getApp();
 		this.customization = app.getAppCustomization();
 		this.menuRowBuilder = new MenuRowBuilder(mapActivity);
 		this.plainMenuItems = new LinkedList<>();
@@ -308,6 +309,10 @@ public class MenuBuilder {
 
 	public void setCustomOnlinePhotosPosition(boolean customOnlinePhotosPosition) {
 		this.customOnlinePhotosPosition = customOnlinePhotosPosition;
+	}
+
+	public Amenity getAmenity() {
+		return amenity;
 	}
 
 	public void setAmenity(Amenity amenity) {
@@ -412,7 +417,7 @@ public class MenuBuilder {
 
 	protected void buildPluginRows(@NonNull View view, @Nullable Object object) {
 		for (OsmandPlugin plugin : menuPlugins) {
-			plugin.buildContextMenuRows(this, view, object);
+			plugin.buildContextMenuRows(this, view, object, amenity);
 		}
 	}
 
@@ -608,7 +613,7 @@ public class MenuBuilder {
 	}
 
 	protected void buildNearestRow(View view, List<Amenity> nearestAmenities, int iconId, String text, String amenityKey) {
-		if (nearestAmenities.size() > 0) {
+		if (!nearestAmenities.isEmpty()) {
 			String count = "(" + nearestAmenities.size() + ")";
 			text = app.getString(R.string.ltr_or_rtl_combine_via_space, text, count);
 			CollapsableView collapsableView = getCollapsableView(view.getContext(), true, nearestAmenities, amenityKey);
@@ -654,7 +659,10 @@ public class MenuBuilder {
 		String title = locationData.get(PointDescription.LOCATION_LIST_HEADER);
 		locationData.remove(PointDescription.LOCATION_LIST_HEADER);
 		CollapsableView cv = getLocationCollapsableView(locationData);
-		buildRow(view, R.drawable.ic_action_get_my_location, null, title, 0, true, cv, false, 1,
+		Drawable icon = getRowIcon(R.drawable.ic_action_get_my_location);
+		String textPrefix = app.getString(R.string.coordinates);
+		buildRow(view, icon,null, textPrefix, title, 0, null,
+				true, cv, false, 1, false, false,
 				false, null, false);
 	}
 
@@ -1171,7 +1179,7 @@ public class MenuBuilder {
 
 	}
 
-	protected CollapsableView getDistanceCollapsableView(Set<String> distanceData) {
+	public CollapsableView getDistanceCollapsableView(Set<String> distanceData) {
 		LinearLayout llv = buildCollapsableContentView(mapActivity, true, true);
 		for (String distance : distanceData) {
 			TextView button = buildButtonInCollapsableView(mapActivity, false, false);
@@ -1327,7 +1335,7 @@ public class MenuBuilder {
 		titleView.setTextSize(16);
 		int textColor = ColorUtilities.getPrimaryTextColor(app, !light);
 		titleView.setTextColor(textColor);
-		String desc = route.getDescription(getMapActivity().getMyApplication(), true);
+		String desc = route.getDescription(getMapActivity().getApp(), true);
 		Drawable arrow = app.getUIUtilities().getIcon(R.drawable.ic_arrow_right_16, light ? R.color.icon_color_secondary_light : R.color.icon_color_secondary_dark);
 		arrow.setBounds(0, 0, arrow.getIntrinsicWidth(), arrow.getIntrinsicHeight());
 
@@ -1413,7 +1421,7 @@ public class MenuBuilder {
 			OsmandMapTileView mapView = getMapActivity().getMapView();
 			MapContextMenu mm = getMapActivity().getContextMenu();
 			PointDescription pd = new PointDescription(PointDescription.POINT_TYPE_TRANSPORT_ROUTE,
-					r.getDescription(getMapActivity().getMyApplication(), false));
+					r.getDescription(getMapActivity().getApp(), false));
 			mm.show(latLon, pd, r);
 			TransportStopsLayer stopsLayer = getMapActivity().getMapLayers().getTransportStopsLayer();
 			stopsLayer.setRoute(r);
@@ -1422,7 +1430,7 @@ public class MenuBuilder {
 		};
 	}
 
-	protected CollapsableView getCollapsableTextView(Context context, boolean collapsed, String text) {
+	public CollapsableView getCollapsableTextView(Context context, boolean collapsed, String text) {
 		TextViewEx textView = new TextViewEx(context);
 		textView.setVisibility(collapsed ? View.GONE : View.VISIBLE);
 		LinearLayout.LayoutParams llTextDescParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -1450,10 +1458,13 @@ public class MenuBuilder {
 			button.setText(name);
 
 			button.setOnClickListener(v -> {
+				ClickableWayHelper clickableWayHelper = app.getClickableWayHelper();
 				if (poi.isRouteTrack()) {
 					TravelHelper travelHelper = app.getTravelHelper();
 					TravelGpx travelGpx = new TravelGpx(poi);
 					travelHelper.openTrackMenu(travelGpx, getMapActivity(), poi.getGpxFileName(null), poi.getLocation(), true);
+				} else if (clickableWayHelper.isClickableWayAmenity(poi)) {
+					clickableWayHelper.openClickableWayAmenity(amenity, true);
 				} else {
 					LatLon latLon = new LatLon(poi.getLocation().getLatitude(), poi.getLocation().getLongitude());
 					mapActivity.getContextMenu().show(latLon, pointDescription, poi);

@@ -133,6 +133,7 @@ public class QuickSearchDialogFragment extends BaseFullScreenDialogFragment impl
 
 	private static final String QUICK_SEARCH_SHOW_TAB_KEY = "quick_search_show_tab_key";
 	private static final String QUICK_SEARCH_TYPE_KEY = "quick_search_type_key";
+	private static final double MIN_COMPASS_DEGREES_TO_UPDATE_CONTENT = 5.0;
 
 	private Toolbar toolbar;
 	private LockableViewPager viewPager;
@@ -589,6 +590,14 @@ public class QuickSearchDialogFragment extends BaseFullScreenDialogFragment impl
 		return view;
 	}
 
+	@Nullable
+	@Override
+	public List<Integer> getBottomContainersIds() {
+		List<Integer> ids = new ArrayList<>();
+		ids.add(R.id.bottom_buttons_container);
+		return ids;
+	}
+
 	private void showFilterOnMap(@Nullable PoiUIFilter filter, @Nullable String title) {
 		MapActivity activity = getMapActivity();
 		if (activity != null) {
@@ -625,17 +634,13 @@ public class QuickSearchDialogFragment extends BaseFullScreenDialogFragment impl
 
 	@NonNull
 	@Override
-	public Dialog onCreateDialog(Bundle savedInstanceState) {
-		Dialog dialog = new Dialog(requireActivity(), getTheme()) {
+	public Dialog createDialog(Bundle savedInstanceState) {
+		return new Dialog(requireActivity(), getTheme()) {
 			@Override
 			public void onBackPressed() {
 				onBackButtonPressed();
 			}
 		};
-		if (!settings.DO_NOT_USE_ANIMATIONS.get()) {
-			dialog.getWindow().getAttributes().windowAnimations = R.style.Animations_Alpha;
-		}
-		return dialog;
 	}
 
 	private void onBackButtonPressed() {
@@ -829,7 +834,7 @@ public class QuickSearchDialogFragment extends BaseFullScreenDialogFragment impl
 		SearchWord word = searchUICore.getPhrase().getLastSelectedWord();
 		if (foundPartialLocation) {
 			buttonToolbarText.setText(getString(R.string.advanced_coords_search).toUpperCase());
-		} else if (!searchEditText.getText().toString().isEmpty()) {
+		} else if (!Algorithms.isEmpty(searchEditText.getText())) {
 			if (searchType.isTargetPoint()) {
 				if (word != null && word.getResult() != null) {
 					buttonToolbarText.setText(getString(R.string.shared_string_select).toUpperCase() + " " + word.getResult().localeName.toUpperCase());
@@ -1902,7 +1907,7 @@ public class QuickSearchDialogFragment extends BaseFullScreenDialogFragment impl
 	                                   @Nullable LatLon latLon) {
 		FragmentManager fragmentManager = mapActivity.getSupportFragmentManager();
 		if (AndroidUtils.isFragmentCanBeAdded(fragmentManager, TAG)) {
-			mapActivity.getMyApplication().logEvent("search_open");
+			mapActivity.getApp().logEvent("search_open");
 
 			Bundle bundle = new Bundle();
 			if (object != null) {
@@ -1912,7 +1917,7 @@ public class QuickSearchDialogFragment extends BaseFullScreenDialogFragment impl
 				if (object instanceof PoiCategory c) {
 					objectLocalizedName = c.getTranslation();
 
-					SearchUICore searchUICore = mapActivity.getMyApplication().getSearchUICore().getCore();
+					SearchUICore searchUICore = mapActivity.getApp().getSearchUICore().getCore();
 					SearchPhrase phrase = searchUICore.resetPhrase(objectLocalizedName + " ");
 					SearchResult sr = new SearchResult(phrase);
 					sr.localeName = objectLocalizedName;
@@ -1926,7 +1931,7 @@ public class QuickSearchDialogFragment extends BaseFullScreenDialogFragment impl
 
 				} else if (object instanceof PoiUIFilter filter) {
 					objectLocalizedName = filter.getName();
-					SearchUICore searchUICore = mapActivity.getMyApplication().getSearchUICore().getCore();
+					SearchUICore searchUICore = mapActivity.getApp().getSearchUICore().getCore();
 					SearchPhrase phrase = searchUICore.resetPhrase();
 					SearchResult sr = new SearchResult(phrase);
 					sr.localeName = objectLocalizedName;
@@ -1985,8 +1990,16 @@ public class QuickSearchDialogFragment extends BaseFullScreenDialogFragment impl
 	}
 
 	private void updateLocationUI(Location location, Float heading) {
-		this.location = location;
-		updateContent(heading);
+		if (shouldUpdateContent(location, this.location)) {
+			this.location = location;
+			updateContent(heading);
+		}
+	}
+
+	private boolean shouldUpdateContent(Location a, Location b) {
+		return b == null || a == null
+				|| !MapUtils.areLatLonEqual(a.getLatitude(), a.getLongitude(), b.getLatitude(), b.getLongitude())
+				|| Math.abs(MapUtils.degreesDiff(a.getBearing(), b.getBearing())) > MIN_COMPASS_DEGREES_TO_UPDATE_CONTENT;
 	}
 
 	private void updateContent(Float heading) {

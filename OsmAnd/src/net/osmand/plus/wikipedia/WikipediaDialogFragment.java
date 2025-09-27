@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -174,6 +173,7 @@ public class WikipediaDialogFragment extends WikiArticleBaseDialogFragment {
 
 	@Override
 	public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
 		populateArticle();
 	}
 
@@ -218,7 +218,7 @@ public class WikipediaDialogFragment extends WikiArticleBaseDialogFragment {
 				String article = "https://" + langSelected.toLowerCase() + ".wikipedia.org/wiki/" + title.replace(' ', '_');
 				Context context = getContext();
 				if (context != null) {
-					AndroidUtils.openUrl(context, Uri.parse(article), nightMode);
+					AndroidUtils.openUrl(context, article, nightMode);
 				}
 			});
 

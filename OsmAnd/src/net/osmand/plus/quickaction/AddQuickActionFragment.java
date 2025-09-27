@@ -13,10 +13,12 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.activity.ComponentActivity;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -31,8 +33,13 @@ import net.osmand.plus.quickaction.AddQuickActionsAdapter.ItemClickListener;
 import net.osmand.plus.quickaction.controller.AddQuickActionController;
 import net.osmand.plus.utils.AndroidUtils;
 import net.osmand.plus.utils.ColorUtilities;
+import net.osmand.plus.utils.InsetsUtils;
+import net.osmand.plus.utils.InsetsUtils.InsetSide;
 import net.osmand.plus.widgets.tools.SimpleTextWatcher;
 import net.osmand.util.Algorithms;
+
+import java.util.EnumSet;
+import java.util.List;
 
 public class AddQuickActionFragment extends BaseFullScreenFragment implements ItemClickListener, IAskDismissDialog {
 
@@ -48,6 +55,7 @@ public class AddQuickActionFragment extends BaseFullScreenFragment implements It
 	private ImageView backButton;
 	private TextView title;
 	private ImageView searchButton;
+	private RecyclerView recyclerView;
 
 	private AddQuickActionController controller;
 	private boolean searchMode = false;
@@ -94,6 +102,17 @@ public class AddQuickActionFragment extends BaseFullScreenFragment implements It
 		return view;
 	}
 
+	@Override
+	public void onApplyInsets(@NonNull WindowInsetsCompat insets) {
+		InsetsUtils.applyPadding(recyclerView, insets, EnumSet.of(searchMode ? InsetSide.BOTTOM : InsetSide.RESET));
+	}
+
+	@Nullable
+	@Override
+	public List<Integer> getScrollableViewIds() {
+		return null;
+	}
+
 	private void setupOnBackPressedCallback() {
 		backPressedCallback = new OnBackPressedCallback(true) {
 			@Override
@@ -102,10 +121,7 @@ public class AddQuickActionFragment extends BaseFullScreenFragment implements It
 					setSearchMode(false);
 				} else {
 					this.setEnabled(false);
-					FragmentActivity activity = getActivity();
-					if (activity != null) {
-						activity.onBackPressed();
-					}
+					callActivity(FragmentActivity::onBackPressed);
 				}
 			}
 		};
@@ -177,7 +193,7 @@ public class AddQuickActionFragment extends BaseFullScreenFragment implements It
 		adapter = new AddQuickActionsAdapter(app, requireActivity(), this, nightMode);
 		adapter.setAdapterMode(DEFAULT_MODE);
 		adapter.setMap(controller.getAdapterItems());
-		RecyclerView recyclerView = view.findViewById(R.id.content_list);
+		recyclerView = view.findViewById(R.id.content_list);
 		recyclerView.setLayoutManager(new LinearLayoutManager(app));
 		recyclerView.setAdapter(adapter);
 		updateAdapter();
@@ -210,9 +226,11 @@ public class AddQuickActionFragment extends BaseFullScreenFragment implements It
 
 	@Override
 	public void onSaveInstanceState(@NonNull Bundle outState) {
-		String searchQuery = adapter.getSearchQuery();
-		if (!Algorithms.isEmpty(searchQuery)) {
-			outState.putString(QUICK_ACTION_SEARCH_KEY, adapter.getSearchQuery());
+		if (adapter != null) {
+			String searchQuery = adapter.getSearchQuery();
+			if (!Algorithms.isEmpty(searchQuery)) {
+				outState.putString(QUICK_ACTION_SEARCH_KEY, adapter.getSearchQuery());
+			}
 		}
 		outState.putBoolean(QUICK_ACTION_SEARCH_MODE_KEY, searchMode);
 		super.onSaveInstanceState(outState);
@@ -220,15 +238,14 @@ public class AddQuickActionFragment extends BaseFullScreenFragment implements It
 
 	@Override
 	public void onItemClick(@NonNull QuickActionType quickActionType) {
-		FragmentActivity activity = getActivity();
-		if (activity != null) {
+		callActivity(activity -> {
 			FragmentManager manager = activity.getSupportFragmentManager();
 			if (quickActionType.getId() != 0) {
 				CreateEditActionDialog.showInstance(manager, quickActionType.getId());
 			} else {
 				AddCategoryQuickActionFragment.showInstance(manager, quickActionType.getCategory());
 			}
-		}
+		});
 	}
 
 	@Override
@@ -239,19 +256,13 @@ public class AddQuickActionFragment extends BaseFullScreenFragment implements It
 	@Override
 	public void onResume() {
 		super.onResume();
-		FragmentActivity activity = getActivity();
-		if (activity instanceof MapActivity) {
-			((MapActivity) activity).disableDrawer();
-		}
+		callMapActivity(MapActivity::disableDrawer);
 	}
 
 	@Override
 	public void onPause() {
 		super.onPause();
-		FragmentActivity activity = getActivity();
-		if (activity instanceof MapActivity) {
-			((MapActivity) activity).enableDrawer();
-		}
+		callMapActivity(MapActivity::enableDrawer);
 	}
 
 	public static void showInstance(@NonNull FragmentManager manager) {

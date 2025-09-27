@@ -30,6 +30,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.view.ContextThemeWrapper;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 
@@ -62,6 +65,7 @@ import net.osmand.plus.settings.enums.MapPosition;
 import net.osmand.plus.transport.TransportStopRoute;
 import net.osmand.plus.utils.AndroidUtils;
 import net.osmand.plus.utils.ColorUtilities;
+import net.osmand.plus.utils.InsetsUtils.InsetSide;
 import net.osmand.plus.utils.NativeUtilities;
 import net.osmand.plus.utils.OsmAndFormatter;
 import net.osmand.plus.utils.UiUtilities;
@@ -87,7 +91,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 public class MapContextMenuFragment extends BaseFullScreenFragment implements DownloadEvents,
 		ICoveredScreenRectProvider, IMapDisplayPositionProvider {
@@ -141,6 +147,7 @@ public class MapContextMenuFragment extends BaseFullScreenFragment implements Do
 	private int viewHeight;
 	private int zoomButtonsHeight;
 	private int statusBarHeight;
+	private int navBarHeight;
 
 	private int markerPaddingPx;
 	private int markerPaddingXPx;
@@ -191,7 +198,7 @@ public class MapContextMenuFragment extends BaseFullScreenFragment implements Do
 			}
 		});
 
-		DialogManager dialogManager = mapActivity.getMyApplication().getDialogManager();
+		DialogManager dialogManager = mapActivity.getApp().getDialogManager();
 		GalleryController controller = (GalleryController) dialogManager.findController(GalleryController.PROCESS_ID);
 		if (controller == null) {
 			dialogManager.register(GalleryController.PROCESS_ID, new GalleryController(app));
@@ -581,13 +588,21 @@ public class MapContextMenuFragment extends BaseFullScreenFragment implements Do
 			if (forceUpdateLayout || bottom != oldBottom) {
 				forceUpdateLayout = false;
 				processScreenHeight((View) view.getParent());
-				runLayoutListener();
+				updateUi();
 			}
 		};
 
 		fitPolygon();
 		created = true;
 		return view;
+	}
+
+	@Nullable
+	@Override
+	public List<Integer> getScrollableViewIds() {
+		List<Integer> ids = new ArrayList<>();
+		ids.add(R.id.context_menu_bottom_view);
+		return ids;
 	}
 
 	private void updateActionButtons(MapActivity mapActivity) {
@@ -818,6 +833,35 @@ public class MapContextMenuFragment extends BaseFullScreenFragment implements Do
 		statusBarHeight = AndroidUtils.getStatusBarHeight(activity);
 	}
 
+	private void updateUi() {
+		WindowInsetsCompat insets = getLastRootInsets();
+		if (insets != null) {
+			Insets sysBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+			if (sysBars.top != 0) {
+				statusBarHeight = sysBars.top;
+			}
+			if (sysBars.bottom != 0) {
+				navBarHeight = sysBars.bottom;
+			}
+			runLayoutListener();
+		} else {
+			ViewCompat.requestApplyInsets(view);
+		}
+	}
+
+	@Override
+	public void onApplyInsets(@NonNull WindowInsetsCompat insets) {
+		super.onApplyInsets(insets);
+		Insets sysBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+		if (sysBars.top != 0) {
+			statusBarHeight = sysBars.top;
+		}
+		if (sysBars.bottom != 0) {
+			navBarHeight = sysBars.bottom;
+		}
+		runLayoutListener();
+	}
+
 	public void openMenuFullScreen() {
 		changeMenuState(getMenuStatePosY(MenuState.FULL_SCREEN), false, false);
 	}
@@ -898,6 +942,7 @@ public class MapContextMenuFragment extends BaseFullScreenFragment implements Do
 		}
 
 		applyPosY(currentY, needCloseMenu, needMapAdjust, currentMenuState, newMenuState, 0);
+		updateNavBarColor();
 	}
 
 	private void restoreCustomMapRatio() {
@@ -1913,7 +1958,7 @@ public class MapContextMenuFragment extends BaseFullScreenFragment implements Do
 	}
 
 	private int getHeaderOnlyTopY() {
-		return viewHeight - menuTitleHeight;
+		return viewHeight - menuTitleHeight - navBarHeight;
 	}
 
 	private int getFullScreenTopPosY() {
@@ -1933,6 +1978,15 @@ public class MapContextMenuFragment extends BaseFullScreenFragment implements Do
 				return getFullScreenTopPosY();
 			default:
 				return 0;
+		}
+	}
+
+	@Override
+	public int getNavigationBarColorId() {
+		if (menu.getCurrentMenuState() == MenuState.HEADER_ONLY && menu.isVisible()) {
+			return nightMode ? R.color.list_background_color_dark : R.color.activity_background_color_light;
+		} else {
+			return super.getNavigationBarColorId();
 		}
 	}
 
@@ -2174,7 +2228,7 @@ public class MapContextMenuFragment extends BaseFullScreenFragment implements Do
 
 		int slideInAnim = 0;
 		int slideOutAnim = 0;
-		if (!mapActivity.getMyApplication().getSettings().DO_NOT_USE_ANIMATIONS.get()) {
+		if (!mapActivity.getSettings().DO_NOT_USE_ANIMATIONS.get()) {
 			slideInAnim = R.anim.slide_in_bottom;
 			slideOutAnim = R.anim.slide_out_bottom;
 

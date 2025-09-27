@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,6 +22,9 @@ import net.osmand.plus.R;
 import net.osmand.plus.utils.AndroidUtils;
 
 import org.apache.commons.logging.Log;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class LogcatActivity extends BaseLogcatActivity {
 
@@ -37,11 +41,9 @@ public class LogcatActivity extends BaseLogcatActivity {
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		OsmandApplication app = getMyApplication();
 		app.applyTheme(this);
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.recyclerview);
-
+		setContentView(R.layout.logcat_activity);
 		ActionBar supportActionBar = getSupportActionBar();
 		if (supportActionBar != null) {
 			supportActionBar.setTitle(R.string.logcat_buffer);
@@ -52,6 +54,14 @@ public class LogcatActivity extends BaseLogcatActivity {
 		recyclerView = findViewById(R.id.recycler_view);
 		recyclerView.setLayoutManager(new LinearLayoutManager(this));
 		recyclerView.setAdapter(adapter);
+	}
+
+	@Nullable
+	@Override
+	public List<Integer> getScrollableViewIds() {
+		List<Integer> ids = new ArrayList<>();
+		ids.add(R.id.recycler_view);
+		return ids;
 	}
 
 	@Override
@@ -68,7 +78,6 @@ public class LogcatActivity extends BaseLogcatActivity {
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		OsmandApplication app = getMyApplication();
 		Drawable shareIcon = app.getUIUtilities().getIcon(R.drawable.ic_action_gshare_dark);
 		MenuItem share = menu.add(0, SHARE_ID, 0, R.string.shared_string_export);
 		share.setIcon(AndroidUtils.getDrawableForDirection(app, shareIcon));

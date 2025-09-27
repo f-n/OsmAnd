@@ -438,10 +438,12 @@ public class DownloadResources extends DownloadResourceGroup {
 			String basename = item.getBasename();
 			WorldRegion region = regs.getRegionDataByDownloadName(basename.toLowerCase());
 			if (region != null) {
-				if (!groupByRegion.containsKey(region)) {
-					groupByRegion.put(region, new ArrayList<>());
+				if (!isMapCreatedByJoiningSubregions(region, type)) {
+					if (!groupByRegion.containsKey(region)) {
+						groupByRegion.put(region, new ArrayList<>());
+					}
+					groupByRegion.get(region).add(item);
 				}
-				groupByRegion.get(region).add(item);
 			} else {
 				String fileName = item.getFileName();
 				if (fileName.contains("World")) {
@@ -449,6 +451,20 @@ public class DownloadResources extends DownloadResourceGroup {
 						nauticalWorldwideMaps.addItem(item);
 					} else {
 						worldMaps.addItem(item);
+					}
+				} else if (fileName.startsWith("Weather_") && fileName.contains(".")) {
+					// Weather_Australia-oceania_australia-oceania-all.tifsqlite.zip - ignore
+					// Weather_Us_northamerica.tifsqlite.zip -> Us_northamerica -> northamerica_us
+					// Weather_Canada_northamerica.tifsqlite.zip -> Canada_northamerica -> northamerica_canada
+					String fileNameRegionName = fileName.substring(fileName.indexOf('_') + 1, fileName.indexOf('.'));
+					if (fileNameRegionName.contains("_") &&
+							!fileNameRegionName.endsWith(WorldRegion.AUSTRALIA_AND_OCEANIA_REGION_ID)) {
+						String[] parts = fileNameRegionName.toLowerCase().split("_");
+						String countryPart = parts[0], regionPart = parts[1]; // us, northamerica
+						WorldRegion weatherRegion = regs.getRegionData(regionPart + "_" + countryPart);
+						if (weatherRegion != null) {
+							groupByRegion.computeIfAbsent(weatherRegion, k -> new ArrayList<>()).add(item);
+						}
 					}
 				} else {
 					otherMaps.addItem(item);
@@ -539,6 +555,12 @@ public class DownloadResources extends DownloadResourceGroup {
 		trimEmptyGroups();
 		updateLoadedFiles();
 		return true;
+	}
+
+	private boolean isMapCreatedByJoiningSubregions(@NonNull WorldRegion region,
+	                                                @NonNull DownloadActivityType type) {
+		return type == DownloadActivityType.NORMAL_FILE && region.isRegionJoinMapDownload()
+				|| type == DownloadActivityType.ROADS_FILE && region.isRegionJoinRoadsDownload();
 	}
 
 	private void replaceIndividualSrtmWithGroups(@NonNull WorldRegion region) {

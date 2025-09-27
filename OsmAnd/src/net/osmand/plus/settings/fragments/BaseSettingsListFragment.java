@@ -92,7 +92,7 @@ public abstract class BaseSettingsListFragment extends BaseFullScreenFragment im
 		selectedItemsSize = root.findViewById(R.id.file_size);
 		itemsSizeContainer = root.findViewById(R.id.file_size_container);
 		expandableList = root.findViewById(R.id.list);
-		buttonsContainer = root.findViewById(R.id.buttons_container);
+		buttonsContainer = root.findViewById(R.id.bottom_buttons_container);
 
 		Toolbar toolbar = root.findViewById(R.id.toolbar);
 		setupToolbar(toolbar);
@@ -124,6 +124,21 @@ public abstract class BaseSettingsListFragment extends BaseFullScreenFragment im
 		updateAvailableSpace();
 
 		return root;
+	}
+
+	@Nullable
+	@Override
+	public List<Integer> getCollapsingAppBarLayoutId() {
+		List<Integer> ids = new ArrayList<>();
+		ids.add(R.id.appbar);
+		return ids;
+	}
+
+	@Nullable
+	public List<Integer> getScrollableViewIds() {
+		List<Integer> ids = new ArrayList<>();
+		ids.add(R.id.list);
+		return ids;
 	}
 
 	protected abstract void onContinueButtonClickAction();

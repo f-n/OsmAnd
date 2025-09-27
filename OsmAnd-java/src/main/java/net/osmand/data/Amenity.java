@@ -31,12 +31,19 @@ import gnu.trove.list.array.TIntArrayList;
 public class Amenity extends MapObject {
 
 	public static final String WEBSITE = "website";
+	public static final String URL = "url";
 	public static final String PHONE = "phone";
 	public static final String MOBILE = "mobile";
+	public static final String BRAND = "brand";
+	public static final String OPERATOR = "operator";
 	public static final String DESCRIPTION = "description";
 	public static final String SHORT_DESCRIPTION = "short_description";
 	public static final String ROUTE = "route";
 	public static final String OPENING_HOURS = "opening_hours";
+	public static final String POPULATION = "population";
+	public static final String WIDTH = "width";
+	public static final String HEIGHT = "height";
+	public static final String DISTANCE = "distance";
 	public static final String SERVICE_TIMES = "service_times";
 	public static final String COLLECTION_TIMES = "collection_times";
 	public static final String CONTENT = "content";
@@ -80,7 +87,9 @@ public class Amenity extends MapObject {
 	public static final String ROUTE_BBOX_RADIUS = "route_bbox_radius";
 	public static final List<String> HIDING_EXTENSIONS_AMENITY_TAGS = Arrays.asList(PHONE, WEBSITE);
 	public static final int DEFAULT_ELO = 900;
-
+	public static final String ADDR_STREET = "addr_street";
+	public static final String ADDR_HOUSENUMBER = "addr_housenumber";
+	
 	private String subType;
 	private PoiCategory type;
 	// duplicate for fast access
@@ -303,9 +312,9 @@ public class Amenity extends MapObject {
 
 	public StringBuilder printNamesAndAdditional() {
 		StringBuilder s = new StringBuilder();
-		Map<String, String> additionals = new HashMap<>();
-		Map<String, String> poi_type = new HashMap<>();
-		Map<String, String> text = new HashMap<>();
+		Map<String, String> additionals = new LinkedHashMap<>();
+		Map<String, String> poi_type = new LinkedHashMap<>();
+		Map<String, String> text = new LinkedHashMap<>();
 		if (additionalInfo != null) {
 			for (Map.Entry<String, String> e : additionalInfo.entrySet()) {
 				String key = e.getKey();
@@ -371,6 +380,14 @@ public class Amenity extends MapObject {
 
 	public String getSite() {
 		return getAdditionalInfo(WEBSITE);
+	}
+	
+	public String getStreetName() {
+		return getAdditionalInfo(ADDR_STREET);
+	}
+	
+	public String getHousenumber() {
+		return getAdditionalInfo(ADDR_HOUSENUMBER);
 	}
 
 	public void setSite(String site) {
@@ -972,4 +989,38 @@ public class Amenity extends MapObject {
 		return typeName + " " + localName; // $NON-NLS-1$
 	}
 
+	public Map<String, String> getOsmTags() {
+		Map<String, String> result = new LinkedHashMap<>();
+
+		Map<String, String> amenityTags = new LinkedHashMap<>();
+		for (String amenityTag : getAdditionalInfoKeys()) {
+			amenityTags.put(amenityTag, getAdditionalInfo(amenityTag));
+		}
+
+		String amenityName = getName();
+		if (!Algorithms.isEmpty(amenityName)) {
+			result.put(NAME, amenityName);
+		}
+
+		PoiCategory category = getType();
+		String subTypesList = getSubType();
+
+		if (subTypesList != null) {
+			for (String subType : subTypesList.split(";")) {
+				PoiType type = category.getPoiTypeByKeyName(subType);
+				if (type != null) {
+					result.putAll(type.getOsmTagsValues());
+					for (PoiType additional : type.getPoiAdditionals()) {
+						if (amenityTags.remove(additional.getKeyName()) != null) {
+							result.putAll(additional.getOsmTagsValues());
+						}
+					}
+				}
+			}
+		}
+
+		result.putAll(amenityTags); // unresolved residues
+
+		return result;
+	}
 }

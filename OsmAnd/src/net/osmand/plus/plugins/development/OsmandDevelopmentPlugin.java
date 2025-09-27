@@ -94,7 +94,7 @@ public class OsmandDevelopmentPlugin extends OsmandPlugin {
 	private final StateChangedListener<Boolean> symbolsDebugInfoListener;
 	private final StateChangedListener<Boolean> debugRenderingInfoListener;
 	private final StateChangedListener<Boolean> msaaListener;
-	private final StateChangedListener<Boolean> batterySavingModeListener;
+	private final StateChangedListener<Boolean> sphericalListener;
 
 	private static final Log LOG_termal = PlatformUtil.getLog("ThermalState");
 
@@ -154,14 +154,14 @@ public class OsmandDevelopmentPlugin extends OsmandPlugin {
 		};
 		settings.ENABLE_MSAA.addListener(msaaListener);
 
-		batterySavingModeListener = change -> {
+		sphericalListener = change -> {
 			OsmandMapTileView mapView = app.getOsmandMap().getMapView();
 			MapRendererView mapRenderer = mapView.getMapRenderer();
 			if (mapRenderer != null) {
-				mapView.applyBatterySavingModeSetting(mapRenderer);
+				mapRenderer.setFlatEarth(!settings.SPHERICAL_MAP.get());
 			}
 		};
-		settings.BATTERY_SAVING_MODE.addListener(batterySavingModeListener);
+		settings.SPHERICAL_MAP.addListener(sphericalListener);
 	}
 
 	@Override
@@ -181,7 +181,7 @@ public class OsmandDevelopmentPlugin extends OsmandPlugin {
 
 	@Override
 	public void registerOptionsMenuItems(MapActivity mapActivity, ContextMenuAdapter helper) {
-		if (Version.isDeveloperVersion(mapActivity.getMyApplication())) {
+		if (Version.isDeveloperVersion(mapActivity.getApp())) {
 			Class<?> contributionVersionActivityClass = null;
 			try {
 				ClassLoader classLoader = OsmandDevelopmentPlugin.class.getClassLoader();
