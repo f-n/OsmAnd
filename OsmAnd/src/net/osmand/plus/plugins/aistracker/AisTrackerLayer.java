@@ -55,6 +55,9 @@ public class AisTrackerLayer extends OsmandMapLayer implements IContextMenuProvi
 	private final Map<Integer, AisObject> objects = new ConcurrentHashMap<>();
 	private final Map<Integer, Bitmap> pointImages = new ConcurrentHashMap<>();
 
+	private static int ownMmsi = 0; // own MMSI in case that own vessel has an AIS transmitter
+	private static boolean showOwnPosition = false; // used to hide own position in case that own vessel has an AIS transmitter
+
 	private Timer timer;
 	private AisMessageListener listener;
 	private MapMarkersCollection markersCollection;
@@ -72,6 +75,8 @@ public class AisTrackerLayer extends OsmandMapLayer implements IContextMenuProvi
 
 		AisObject.setCpaWarningTime(plugin.AIS_CPA_WARNING_TIME.get());
 		AisObject.setCpaWarningDistance(plugin.AIS_CPA_WARNING_DISTANCE.get());
+		setOwnMmsi(plugin.AIS_OWN_MMSI.get(), this);
+		setDisplayOwnObject(plugin.AIS_DISPLAY_OWN_POSITION.get(), this);
 
 		initTimer();
 		startNetworkListener();
@@ -188,6 +193,13 @@ public class AisTrackerLayer extends OsmandMapLayer implements IContextMenuProvi
 		}
 	}
 
+	private void removeAisObjectFromList(int mmsi, @NonNull AisObject obj) {
+		if (view.getMapRenderer() != null && markersCollection != null && vectorLinesCollection != null) {
+			obj.clearAisRenderData(markersCollection, vectorLinesCollection);
+		}
+		objects.remove(mmsi, obj);
+	}
+
 	private void removeLostAisObjects() {
 		for (Iterator<Map.Entry<Integer, AisObject>> iterator = objects.entrySet().iterator(); iterator.hasNext(); ) {
 			Map.Entry<Integer, AisObject> entry = iterator.next();
@@ -195,6 +207,9 @@ public class AisTrackerLayer extends OsmandMapLayer implements IContextMenuProvi
 				Log.d("AisTrackerLayer", "remove AIS object with MMSI " + entry.getValue().getMmsi());
 				if (view.getMapRenderer() != null && markersCollection != null && vectorLinesCollection != null) {
 					entry.getValue().clearAisRenderData(markersCollection, vectorLinesCollection);
+				}
+				if (entry.getValue().getMmsi() == ownMmsi) {
+					AisObject.setOwnObject(null);
 				}
 				iterator.remove();
 			}
@@ -215,10 +230,7 @@ public class AisTrackerLayer extends OsmandMapLayer implements IContextMenuProvi
 		}
 		if (oldest != null) {
 			Log.d("AisTrackerLayer", "remove AIS object with MMSI " + oldest.getMmsi());
-			if (view.getMapRenderer() != null && markersCollection != null && vectorLinesCollection != null) {
-				oldest.clearAisRenderData(markersCollection, vectorLinesCollection);
-			}
-			objects.remove(oldest.getMmsi(), oldest);
+			removeAisObjectFromList(oldest.getMmsi(), oldest);
 		}
 	}
 
@@ -226,10 +238,21 @@ public class AisTrackerLayer extends OsmandMapLayer implements IContextMenuProvi
 	public void updateAisObjectList(@NonNull AisObject ais) {
 		int mmsi = ais.getMmsi();
 		AisObject obj = objects.get(mmsi);
+		boolean own = (ownMmsi == mmsi);
+		if (own) {
+			AisObject.setOwnObject(obj);
+			Log.d("AisTrackerLayer", "Own MMSI identified.");
+		}
 		if (obj == null) {
+			if ((own) && (!showOwnPosition)) {
+				return; // exclude own AIS object from list
+			}
 			Log.d("AisTrackerLayer", "add AIS object with MMSI " + ais.getMmsi());
 			AisObject newObj = new AisObject(ais);
 
+			if (own) {
+				AisObject.setOwnObject(newObj);
+			}
 			if (view.getMapRenderer() != null && markersCollection != null && vectorLinesCollection != null) {
 				newObj.createAisRenderData(getBaseOrder(), this, bitmapPaint,
 						markersCollection, vectorLinesCollection, aisRestImage);
@@ -242,10 +265,15 @@ public class AisTrackerLayer extends OsmandMapLayer implements IContextMenuProvi
 				this.removeOldestAisObjectListEntry();
 			}
 		} else {
-			obj.set(ais);
+			if ((own) && (!showOwnPosition)) {
+				removeAisObjectFromList(mmsi, obj);
+				AisObject.setOwnObject(null);
+			} else {
+				obj.set(ais);
 
-			if (view.getMapRenderer() != null && markersCollection != null && vectorLinesCollection != null) {
-				obj.updateAisRenderData(getTileView(), this, bitmapPaint);
+				if (view.getMapRenderer() != null && markersCollection != null && vectorLinesCollection != null) {
+					obj.updateAisRenderData(getTileView(), this, bitmapPaint);
+				}
 			}
 		}
 	}
@@ -376,5 +404,31 @@ public class AisTrackerLayer extends OsmandMapLayer implements IContextMenuProvi
 							(ais.getSignalLostState() ? " (signal lost)" : ""));
 		}
 		return null;
+	}
+
+	public static void setOwnMmsi(int mmsi, AisTrackerLayer layer) {
+		Log.d("AisTrackerLayer", "own MMSI set to: " + mmsi);
+		if ((layer != null) && (mmsi != ownMmsi)) {
+			AisObject newOwn = layer.objects.get(mmsi);
+			if ((newOwn != null) && (!showOwnPosition)) {
+				Log.d("AisTrackerLayer", "own MMSI changed: remove old object");
+				layer.removeAisObjectFromList(mmsi, newOwn);
+			}
+			AisObject.setOwnObject(newOwn);
+		}
+		ownMmsi = mmsi;
+	}
+
+	public static void setDisplayOwnObject(Boolean show, AisTrackerLayer layer) {
+		Log.d("AisTrackerLayer", "show own MMSI: " + show);
+		if (!show) {
+			AisObject own = AisObject.getOwnObject();
+			if ((own != null) && (layer != null)) {
+				Log.d("AisTrackerLayer", "remove own AIS object from list");
+				layer.removeAisObjectFromList(own.getMmsi(), own);
+			}
+			AisObject.setOwnObject(null);
+		}
+		showOwnPosition = show;
 	}
 }

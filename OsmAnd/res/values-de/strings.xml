@@ -5687,6 +5687,7 @@
     <string name="map_widget_route_information_desc">Zeigt die geschätzte Ankunftszeit, die verbleibende Reisezeit und die Entfernung für die aktive Navigationsroute an.</string>
     <string name="ais_nmea_protocol_description">Protokoll für NMEA-Datenempfang auswählen</string>
     <string name="ais_ship_lost_timeout_description">Zeitlimit für die Sichtbarkeit veralteter Schiffe festlegen: Nach Ablauf dieser Zeit ohne Signalempfang wird das Schiffssymbol durchgestrichen.</string>
+    <string name="ais_display_own_position_description">Üblicherweise wird die eigene Position von OsmAnd angezeigt. Die zusätzliche Anzeige des AIS-Objektes kann verwirren und deshalb abgeschaltet werden.</string>
     <string name="plugin_ais_tracker_name">AIS-Schiffstracker</string>
     <string name="ais_cpa_warning_time_description">Wenn die TCPA (Zeit bis zum nächsten Annäherungspunkt) zu einem anderen Schiff unter den festgelegten Schwellenwert fällt, wird das Schiff rot markiert.</string>
     <string name="ais_port_nmea_local_description">UDP-Port definieren, an dem OsmAnd NMEA-Daten empfängt</string>
@@ -5908,4 +5909,9 @@
     <string name="show_spherical_map">Sphärische Karte anzeigen</string>
     <string name="show_spherical_map_description">Sphäroidisches Modell der Erde anzeigen</string>
     <string name="shared_string_price">Preis</string>
+    <string name="ais_own_object">Einstellung zur Anzeige des eigenen AIS Objektes</string>
+    <string name="ais_own_object_description">Wenn das eigene Schiff einen AIS Transmitter besitzt, wird das empfangene Signal zusammen mit den anderen Schiffen empfangen. Die Anzeige des eigenen AIS Objektes kann hier definiert werden.</string>
+    <string name="ais_own_mmsi">Eigene MMSI (Maritime Mobile Service Identity)</string>
+    <string name="ais_own_mmsi_description">Eingabe der MMSI (9 stelliger numerischer Wert) für das eigene AIS Objekt.</string>
+    <string name="ais_display_own_position">Anzeige des eigenen AIS-Objektes erlauben.</string>
 </resources>
