@@ -87,6 +87,7 @@ public class AisObject {
     private static float cpaWarningDistance = AIS_CPA_WARNING_DEFAULT_DISTANCE; // in miles
     private static Location ownPosition = null; // used to calculate distances, CPA etc.
     private static boolean ownPositionFaked = false; // used for test purposes to fake own position
+    private static AisObject ownObject = null; // object representing own AIS transmitter (if present)
     private AisObjType objectClass;
     private Bitmap bitmap = null;
     private boolean bitmapValid = false;
@@ -489,7 +490,9 @@ public class AisObject {
     }
 
     private void setColor() {
-        if (isLost(vesselLostTimeoutInMinutes) && !vesselAtRest) {
+        if (isOwn()) {
+            this.bitmapColor = Color.BLACK;
+        } else if (isLost(vesselLostTimeoutInMinutes) && !vesselAtRest) {
             if (isMovable()) {
                 this.bitmapColor = 0; // default icon
             }
@@ -505,7 +508,7 @@ public class AisObject {
             if (!this.bitmapValid) {
                 setBitmap(mapLayer);
             }
-            if (checkCpaWarning()) {
+            if ((!isOwn()) && checkCpaWarning()) {
                 activateCpaWarning();
             } else {
                 deactivateCpaWarning();
@@ -581,7 +584,7 @@ public class AisObject {
                         canvas.rotate(this.ais_heading, locationX, locationY);
                     }
                     drawShape(locationX, locationY, tileBox, paint, canvas);
-                 }
+                }
             } else {
                 // Log.d("AisObject", "zoom: " + tileBox.getZoom());
                 canvas.drawBitmap(this.bitmap, Math.round(fx), Math.round(fy), paint);
@@ -589,13 +592,17 @@ public class AisObject {
             }
             if ((tileBox.getZoom() >= START_ZOOM_SHOW_DIRECTION) && (speedFactor > 0.0f) &&
                     (!isLost(vesselLostTimeoutInMinutes)) && !vesselAtRest) {
-	            float lineLength = (float)this.bitmap.getHeight() * speedFactor;
+                float lineLength = (float)this.bitmap.getHeight() * speedFactor;
                 float lineStartY = locationY - this.bitmap.getHeight() / 4.0f;
                 float lineEndY = lineStartY - lineLength;
                 canvas.drawLine((float) locationX, lineStartY, (float) locationX, lineEndY, paint);
             }
             canvas.restore();
         }
+    }
+
+    private boolean isOwn() {
+        return (ownObject == this);
     }
 
     public boolean isMovable() {
@@ -716,6 +723,8 @@ public class AisObject {
         ownPosition = fakePosition;
         ownPositionFaked = fakePosition != null;
     }
+    public static void setOwnObject(AisObject obj) { ownObject = obj; }
+    public static AisObject getOwnObject() { return ownObject; }
     /*
     * this function checks the age of the object (check lastUpdate against its limit)
     * and returns true if the object is outdated and can be removed
