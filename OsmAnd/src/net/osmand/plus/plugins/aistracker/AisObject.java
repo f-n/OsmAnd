@@ -539,22 +539,26 @@ public class AisObject {
 
     private void drawShape(float locationX, float locationY, @NonNull RotatedTileBox tileBox,
                             @NonNull Paint paint, @NonNull Canvas canvas) {
-        // draw the shape of the vessel based on the received dimension data
+        // draw the shape of the vessel based on the received dimension data,
+        // for vessel dimension encoding see ITU-R M.1371-5 (http://www.itu.int/rec/R-REC-M/e)
+        float a, b, c, d, e;
         if ((tileBox.getZoom() >= START_ZOOM_SHOW_SHAPE) &&
-                (this.ais_dimensionToBow != INVALID_DIMENSION) &&
-                (this.ais_dimensionToStern != INVALID_DIMENSION) &&
-                (this.ais_dimensionToPort != INVALID_DIMENSION) &&
-                (this.ais_dimensionToStarboard != INVALID_DIMENSION) &&
+                (this.ais_dimensionToBow + this.ais_dimensionToStern > 0) &&
+                (this.ais_dimensionToPort + this.ais_dimensionToStarboard > 0) &&
                 (!isLost(vesselLostTimeoutInMinutes))) {
             double pixDensity = tileBox.getPixDensity();
-            float a = (float)(this.ais_dimensionToBow * pixDensity);
-            float b = (float)(this.ais_dimensionToStern * pixDensity);
-            float c = (float)(this.ais_dimensionToPort * pixDensity);
-            float d = (float)(this.ais_dimensionToStarboard * pixDensity);
-            float e = 0.5f * (c + d);
-            //Log.d("AisObject", "toBow: " + this.ais_dimensionToBow  + ", toStern: " + this.ais_dimensionToStern +
-            //        ", toPort: " + this.ais_dimensionToPort + ", toStarboard: " + this.ais_dimensionToStarboard +
-            //        ", pixDensity: " + pixDensity);
+            if ((this.ais_dimensionToBow == 0) && (this.ais_dimensionToPort == 0)) {
+                a = (float)(this.ais_dimensionToStern * pixDensity * 0.5f);
+                b = a;
+                c = (float)(this.ais_dimensionToStarboard * pixDensity * 0.5f);
+                d = c;
+            } else {
+                a = (float)(this.ais_dimensionToBow * pixDensity);
+                b = (float)(this.ais_dimensionToStern * pixDensity);
+                c = (float)(this.ais_dimensionToPort * pixDensity);
+                d = (float)(this.ais_dimensionToStarboard * pixDensity);
+            }
+            e = 0.5f * (c + d);
             canvas.drawLine((float) locationX - c, (float) locationY + b,
                     (float) locationX - c, (float) locationY - a + e, paint);
             canvas.drawLine((float) locationX - c, (float) locationY - a + e,
@@ -574,15 +578,8 @@ public class AisObject {
         if (this.bitmap != null) {
             canvas.save();
             canvas.rotate(tileBox.getRotate(), (float)tileBox.getCenterPixelX(), (float)tileBox.getCenterPixelY());
-            float speedFactor = getMovement();
             int locationX = tileBox.getPixXFromLonNoRot(this.ais_position.getLongitude());
             int locationY = tileBox.getPixYFromLatNoRot(this.ais_position.getLatitude());
-            float fx =  locationX - this.bitmap.getWidth() / 2.0f;
-            float fy =  locationY - this.bitmap.getHeight() / 2.0f;
-            if (!vesselAtRest && this.needRotation()) {
-                float rotation = getVesselRotation();
-                canvas.rotate(rotation, locationX, locationY);
-            }
             if (vesselAtRest) {
                 drawCircle(locationX, locationY, paint, canvas);
                 if (this.ais_heading != INVALID_HEADING) {
@@ -592,16 +589,35 @@ public class AisObject {
                     drawShape(locationX, locationY, tileBox, paint, canvas);
                 }
             } else {
-                // Log.d("AisObject", "zoom: " + tileBox.getZoom());
+                boolean needRotation = this.needRotation();
+                float rotation = 0.0f;
+                float speedFactor = getMovement();
+                float fx =  locationX - this.bitmap.getWidth() / 2.0f;
+                float fy =  locationY - this.bitmap.getHeight() / 2.0f;
+                if (needRotation) {
+                    // the idea of the directions of the bitmap, vessel shape etc. is:
+                    // - draw the bitmap and the direction line in direction of the course (ais_cog) of the vessel
+                    //  - if no course is available, use heading (ais_heading) instead
+                    //  - if heading is also not available, fallback to "no rotation" (northwards)
+                    // - the direction of the shape of the vessel may differ:
+                    //  - if heading is given and differs from course, then use heading as direction of the shape
+                    //  - in this case the direction of the bitmap (with direction line) differs from the shape direction
+                    rotation = getVesselRotation();
+                    canvas.rotate(rotation, locationX, locationY);
+                }
                 canvas.drawBitmap(this.bitmap, Math.round(fx), Math.round(fy), paint);
+                if ((tileBox.getZoom() >= START_ZOOM_SHOW_DIRECTION) && (speedFactor > 0.0f) &&
+                        (!isLost(vesselLostTimeoutInMinutes))) {
+                    float lineLength = (float)this.bitmap.getHeight() * speedFactor;
+                    float lineStartY = locationY - this.bitmap.getHeight() / 4.0f;
+                    float lineEndY = lineStartY - lineLength;
+                    canvas.drawLine((float) locationX, lineStartY, (float) locationX, lineEndY, paint);
+                }
+                if ((needRotation) && (this.ais_heading != INVALID_HEADING) &&
+                        (this.ais_heading != 0) && (this.ais_heading != rotation)) {
+                    canvas.rotate(this.ais_heading - rotation, locationX, locationY);
+                }
                 drawShape(locationX, locationY, tileBox, paint, canvas);
-            }
-            if ((tileBox.getZoom() >= START_ZOOM_SHOW_DIRECTION) && (speedFactor > 0.0f) &&
-                    (!isLost(vesselLostTimeoutInMinutes)) && !vesselAtRest) {
-                float lineLength = (float)this.bitmap.getHeight() * speedFactor;
-                float lineStartY = locationY - this.bitmap.getHeight() / 4.0f;
-                float lineEndY = lineStartY - lineLength;
-                canvas.drawLine((float) locationX, lineStartY, (float) locationX, lineEndY, paint);
             }
             canvas.restore();
         }
